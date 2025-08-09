@@ -4,6 +4,7 @@ import (
 	"Skripsi-Backend/controllers"
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/middleware"
+	"Skripsi-Backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
@@ -17,15 +18,19 @@ func main() {
 	}
 
 	database.Connect()
+	err = database.DB.AutoMigrate(&models.Students{})
+	if err != nil {
+		log.Fatalf("Gagal migrasi database: %v", err)
+	}
 
 	router := gin.Default()
 	publicRoutes := router.Group("/auth")
-	publicRoutes.POST("/register", controllers.Register)
-	publicRoutes.POST("/login", controllers.Login)
+	publicRoutes.POST("/register", controllers.RegisterStudents)
+	publicRoutes.POST("/login", controllers.LoginStudents)
 
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.RequireAuth)
-	protectedRoutes.GET("/profile", controllers.GetProfile)
+	protectedRoutes.GET("/profile", controllers.GetProfileStudents)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
