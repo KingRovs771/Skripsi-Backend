@@ -79,5 +79,5 @@ func ValidateJWT(c *gin.Context) (*CustomClaims, error) {
 		return claims, nil
 	}
 
-	return nil, errors.New("Token tidak valid")
+	return nil, errors.New("Token tidak Valid Silakan Ulangi Lagi")
 }
