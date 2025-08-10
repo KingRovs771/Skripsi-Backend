@@ -3,7 +3,7 @@ package models
 import "time"
 
 type HasilDiagnosis struct {
-	ResultId         int64     `gorm:"primaryKey" json:"result_id"`
+	ResultId         int64     `gorm:"primaryKey;uniqueIndex" json:"result_id"`
 	StudentId        int64     `gorm:"type:int" json:"student_id"`
 	TestSessionId    int64     `gorm:"type:varchar" json:"test_session_id"`
 	Phq9Score        int64     `gorm:"type:int" json:"phq9_score"`

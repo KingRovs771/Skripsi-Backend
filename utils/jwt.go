@@ -12,7 +12,7 @@ import (
 )
 
 type CustomClaims struct {
-	ID       uint   `json:"id"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	jwt.RegisteredClaims
@@ -31,9 +31,33 @@ func GenerateJWTStudents(students models.Students) (string, error) {
 	}
 
 	claims := CustomClaims{
-		ID:       students.ID,
-		Username: students.Username,
-		Email:    students.Email,
+		ID:    students.StudentsUID,
+		Email: students.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(tokenLifespan))),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(jwtSecret))
+}
+
+func GenerateJWTAdmin(admin models.Administrator) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return "", errors.New("Variabel lingkungan JWT_SECRET belum di-set")
+	}
+
+	tokenLifespanStr := os.Getenv("TOKEN_HOUR_LIFESPAN")
+	tokenLifespan, err := strconv.Atoi(tokenLifespanStr)
+	if err != nil {
+		tokenLifespan = 1
+	}
+
+	claims := CustomClaims{
+		ID:    admin.AdminUID,
+		Email: admin.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(tokenLifespan))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

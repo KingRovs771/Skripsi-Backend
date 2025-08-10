@@ -1,0 +1,5 @@
+### Check Connection Http API Golang
+GET http://localhost:8080
+
+### Register Check
+POST http://localhost:8080/auth/register

@@ -7,16 +7,13 @@ import (
 	"net/http"
 )
 
-func RegisterStudents(c *gin.Context) {
+func RegisterAdministrator(c *gin.Context) {
 	var registerUser struct {
-		NISN              string `json:"nisn"`
-		NamaLengkap       string `json:"nama_lengkap"`
-		NamaInisial       string `json:"nama_inisial"`
-		JenjangPendidikan string `json:"jenjang_pendidikan"`
-		Kelas             int64  `json:"kelas"`
-		Username          string `json:"username"`
-		Password          string `json:"password"`
-		Email             string `json:"email"`
+		NamaLengkap string `json:"nama_lengkap"`
+		NamaInisial string `json:"nama_inisial"`
+		Username    string `json:"username"`
+		Password    string `json:"password"`
+		Email       string `json:"email"`
 	}
 
 	if err := c.BindJSON(&registerUser); err != nil {
@@ -24,17 +21,13 @@ func RegisterStudents(c *gin.Context) {
 		return
 	}
 
-	RegisterStudents := models.Students{
-		NISN:              registerUser.NISN,
-		NamaLengkap:       registerUser.NamaLengkap,
-		NamaInisial:       registerUser.NamaInisial,
-		JenjangPendidikan: registerUser.JenjangPendidikan,
-		Kelas:             registerUser.Kelas,
-		Username:          registerUser.Username,
-		Password:          registerUser.Password,
-		Email:             registerUser.Email,
+	RegisterAdministrator := models.Administrator{
+		NamaLengkap: registerUser.NamaLengkap,
+		Username:    registerUser.Username,
+		Password:    registerUser.Password,
+		Email:       registerUser.Email,
 	}
-	savedStudents, err := RegisterStudents.Save()
+	savedAdmin, err := RegisterAdministrator.SaveAdministrator()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -42,11 +35,11 @@ func RegisterStudents(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Status":  http.StatusOK,
 		"Message": "Data Register Telah Berhasil di Simpan, Silakan Lanjutkan Proses Login",
-		"data":    savedStudents,
+		"data":    savedAdmin,
 	})
 }
 
-func LoginStudents(c *gin.Context) {
+func LoginAdmin(c *gin.Context) {
 	var input struct {
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required"`
@@ -57,18 +50,18 @@ func LoginStudents(c *gin.Context) {
 		return
 	}
 
-	loginStudents, err := models.FindUserByEmail(input.Email)
+	loginAdmin, err := models.FindUserByEmailAdministrator(input.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email atau password salah"})
 		return
 	}
 
-	err = loginStudents.ValidatePassword(input.Password)
+	err = loginAdmin.ValidatePasswordAdministrator(input.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email atau password salah"})
 		return
 	}
-	jwt, err := utils.GenerateJWTStudents(loginStudents)
+	jwt, err := utils.GenerateJWTAdmin(loginAdmin)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token"})
 		return
@@ -77,7 +70,7 @@ func LoginStudents(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": jwt})
 }
 
-func GetProfileStudents(c *gin.Context) {
+func GetProfileAdmin(c *gin.Context) {
 	studentsUIDInterface, exists := c.Get("students_uid")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Gagal mendapatkan user dari context"})

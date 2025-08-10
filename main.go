@@ -5,10 +5,12 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/middleware"
 	"Skripsi-Backend/models"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -18,12 +20,31 @@ func main() {
 	}
 
 	database.Connect()
-	err = database.DB.AutoMigrate(&models.Students{})
+	err = database.DB.AutoMigrate(
+		&models.Administrator{},
+		&models.Article{},
+		&models.Category{},
+		&models.HasilDiagnosis{},
+		&models.JawabanStudents{},
+		&models.JenisKuisioner{},
+		&models.Kuisioner{},
+		&models.Role{},
+		&models.Students{},
+	)
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
 	}
 
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:8080"}, // Ganti dengan domain frontend Anda
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	publicRoutes := router.Group("/auth")
 	publicRoutes.POST("/register", controllers.RegisterStudents)
 	publicRoutes.POST("/login", controllers.LoginStudents)
@@ -31,6 +52,14 @@ func main() {
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.RequireAuth)
 	protectedRoutes.GET("/profile", controllers.GetProfileStudents)
+
+	ArticleRoutes := router.Group("/api/article")
+	ArticleRoutes.Use(middleware.RequireAuth)
+	ArticleRoutes.GET("/", controllers.GetAllArticles)
+	ArticleRoutes.POST("/create", controllers.CreateArticle)
+
+	DashboardRoutes := router.Group("/api/home")
+	DashboardRoutes.GET("/articles", controllers.GetHomeArticles)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

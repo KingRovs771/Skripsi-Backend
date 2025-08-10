@@ -3,6 +3,7 @@ package models
 import (
 	"Skripsi-Backend/database"
 	"errors"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/html"
 	"gorm.io/gorm"
@@ -10,8 +11,7 @@ import (
 )
 
 type Students struct {
-	gorm.Model
-	StudentsId        int64  `gorm:"primaryKey" json:"students_id"`
+	StudentsId        int64  `gorm:"primaryKey;uniqueIndex" json:"students_id"`
 	StudentsUID       string `gorm:"type:varchar(90)" json:"students_uid"`
 	NISN              string `gorm:"type:varchar(20)" json:"nisn"`
 	NamaLengkap       string `gorm:"type:varchar(90)" json:"nama_lengkap"`
@@ -24,12 +24,19 @@ type Students struct {
 }
 
 func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14) // 14 adalah cost factor
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	return string(bytes), err
 }
 
 func (u *Students) BeforeSave(*gorm.DB) error {
-	// 1. Hash password user.
+	//Create UUID
+	UniqueId, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	u.StudentsUID = UniqueId.String()
+
+	//Hash Password
 	hashedPassword, err := hashPassword(u.Password)
 	if err != nil {
 		return err
@@ -62,14 +69,15 @@ func FindUserByEmail(email string) (Students, error) {
 	}
 	return user, nil
 }
-func FindUserByID(StudentsUID int64) (Students, error) {
-	var user Students
-	err := database.DB.First(&user, StudentsUID).Error
+func FindUserByID(StudentsUID string) (Students, error) {
+	var student Students
+	// Gunakan .Where() untuk mencari di kolom spesifik "students_uid"
+	err := database.DB.Where("students_uid = ?", StudentsUID).First(&student).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Students{}, errors.New("user tidak ditemukan")
 		}
 		return Students{}, err
 	}
-	return user, nil
+	return student, nil
 }
