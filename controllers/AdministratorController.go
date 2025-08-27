@@ -7,38 +7,6 @@ import (
 	"net/http"
 )
 
-func RegisterAdministrator(c *gin.Context) {
-	var registerUser struct {
-		NamaLengkap string `json:"nama_lengkap"`
-		NamaInisial string `json:"nama_inisial"`
-		Username    string `json:"username"`
-		Password    string `json:"password"`
-		Email       string `json:"email"`
-	}
-
-	if err := c.BindJSON(&registerUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	RegisterAdministrator := models.Administrator{
-		NamaLengkap: registerUser.NamaLengkap,
-		Username:    registerUser.Username,
-		Password:    registerUser.Password,
-		Email:       registerUser.Email,
-	}
-	savedAdmin, err := RegisterAdministrator.SaveAdministrator()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"Status":  http.StatusOK,
-		"Message": "Data Register Telah Berhasil di Simpan, Silakan Lanjutkan Proses Login",
-		"data":    savedAdmin,
-	})
-}
-
 func LoginAdmin(c *gin.Context) {
 	var input struct {
 		Email    string `json:"email" binding:"required,email"`

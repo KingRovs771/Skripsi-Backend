@@ -1,8 +1,7 @@
 package models
 
 type Kuisioner struct {
-	KuisionerId   int64  `gorm:"primaryKey;uniqueIndex" json:"kuisioner_id"`
-	JenisKuisId   int64  `gorm:"int" json:"jenis_kuis_id"`
-	KodeKuisioner string `gorm:"type:varchar(20)" json:"kode_kuisioner"`
-	KuisionerText string `gorm:"type:text" json:"kuisioner_text"`
+	JenisKuisionerId   int64  `gorm:"primaryKey;uniqueIndex" json:"jenis_kuisioner_id"`
+	NamaJenisKuisioner string `gorm:"type:varchar(20)" json:"nama_jenis_kuisioner"`
+	Deskripsi          string `gorm:"type:text" json:"deskripsi"`
 }

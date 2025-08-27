@@ -188,7 +188,6 @@ func GetHomeArticles(c *gin.Context) {
 
 	var response []HomeArticleResponse
 	for _, article := range articles {
-		// Buat ringkasan (summary)
 		summary := article.IsiArticle
 		if len(summary) > 150 {
 			summary = summary[:150] + "..."
@@ -196,7 +195,7 @@ func GetHomeArticles(c *gin.Context) {
 
 		thumbnailURL := ""
 		if len(article.Thumbnails) > 0 {
-			baseURL := "https://" + c.Request.Host
+			baseURL := "rhttps://" + c.Request.Host
 			thumbnailURL = fmt.Sprintf("%s/api/articles/%s/thumbnail", baseURL, article.ArticleUID)
 		}
 
