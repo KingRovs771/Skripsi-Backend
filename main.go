@@ -5,12 +5,13 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/middleware"
 	"Skripsi-Backend/models"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -23,11 +24,16 @@ func main() {
 	err = database.DB.AutoMigrate(
 		&models.Administrator{},
 		&models.Article{},
+		&models.Aturan{},
 		&models.Category{},
+		&models.DetailAturan{},
+		&models.DetailDiagnosis{},
+		&models.Gejala{},
 		&models.HasilDiagnosis{},
-		&models.JawabanStudents{},
-		&models.JenisKuisioner{},
 		&models.Kuisioner{},
+		&models.OpsiJawaban{},
+		&models.Penyakit{},
+		&models.Pertanyaan{},
 		&models.Role{},
 		&models.Students{},
 	)
