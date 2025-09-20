@@ -63,3 +63,10 @@ func GetProfileAdmin(c *gin.Context) {
 		"Data":    user,
 	})
 }
+
+func CreateAdministrator(c *gin.Context) {
+	var input struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
+	}
+}
