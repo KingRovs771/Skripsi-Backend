@@ -3,11 +3,12 @@ package models
 import (
 	"Skripsi-Backend/database"
 	"errors"
+	"html"
+	"strings"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"html"
-	"strings"
 )
 
 type Administrator struct {
@@ -69,6 +70,7 @@ func FindUserByEmailAdministrator(email string) (Administrator, error) {
 	}
 	return user, nil
 }
+
 func FindUserByIDAdministrator(AdminUID string) (Administrator, error) {
 	var admin Administrator
 	// Gunakan .Where() untuk mencari di kolom spesifik "students_uid"

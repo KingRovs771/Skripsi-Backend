@@ -3,8 +3,9 @@ package controllers
 import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func CreateCategory(c *gin.Context) {
@@ -39,3 +40,11 @@ func GetAllCategories(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": categories})
 }
+
+func getCategoryByUID(c *gin.Context){}
+
+func updateCategory(c *gin.Context){
+
+}
+
+func deleteCategory(c *gin.Context){}

@@ -51,6 +51,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	//Login Routes
 	publicRoutes := router.Group("/auth")
 	publicRoutes.POST("/register", controllers.RegisterStudents)
 	publicRoutes.POST("/login", controllers.LoginStudents)
@@ -59,13 +60,26 @@ func main() {
 	protectedRoutes.Use(middleware.RequireAuth)
 	protectedRoutes.GET("/profile", controllers.GetProfileStudents)
 
+	//Article Admin Routes
 	ArticleRoutes := router.Group("/api/article")
 	ArticleRoutes.Use(middleware.RequireAuth)
-	ArticleRoutes.GET("/", controllers.GetAllArticles)
-	ArticleRoutes.POST("/create", controllers.CreateArticle)
-
+	ArticleRoutes.GET("/getArticles", controllers.GetAllArticles)
+	ArticleRoutes.POST("/createArticles", controllers.CreateArticle)
+	ArticleRoutes.GET("/getArticleUID/:uid")
+	ArticleRoutes.PUT("/updateArticle")
+	ArticleRoutes.DELETE("/deleteArticle/:uid")
+	
+	//Index Web
 	DashboardRoutes := router.Group("/api/home")
 	DashboardRoutes.GET("/articles", controllers.GetHomeArticles)
+
+	//Administrator Route
+	AdminRoutes := router.Group("/api/admin")
+	AdminRoutes.GET("/getAdmin", controllers.GetAllAdministrator)
+	AdminRoutes.POST("/createAdmin", controllers.CreateAdministrator)
+	AdminRoutes.GET("/getAdmin/:uid", controllers.GetAdministratorByUID)
+	AdminRoutes.PUT("/updateAdmin", controllers.UpdateAdministrator)
+	AdminRoutes.DELETE("/deleteAdmin", controllers.DeleteAdministrator)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
