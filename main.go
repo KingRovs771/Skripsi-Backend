@@ -65,12 +65,12 @@ func main() {
 	ArticleRoutes.Use(middleware.RequireAuth)
 	ArticleRoutes.GET("/getArticles", controllers.GetAllArticles)
 	ArticleRoutes.POST("/createArticles", controllers.CreateArticle)
-	ArticleRoutes.GET("/getArticleUID/:uid")
-	ArticleRoutes.PUT("/updateArticle")
-	ArticleRoutes.DELETE("/deleteArticle/:uid")
+	ArticleRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
+	ArticleRoutes.PUT("/updateArticle", controllers.UpdateArticle)
+	ArticleRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 	
 	//Index Web
-	DashboardRoutes := router.Group("/api/home")
+	DashboardRoutes := router.Group("/api/home")	
 	DashboardRoutes.GET("/articles", controllers.GetHomeArticles)
 
 	//Administrator Route

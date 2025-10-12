@@ -18,7 +18,7 @@ type UpdateAdminInput struct {
 	Alamat      string `json:"alamat"`
 	Username    string `json:"username"`
 	Password    string `json:"password"`
-	RoleId      int64  `json:"role_id"`
+	RoleUID     string `json:"role_id"`
 }
 
 
@@ -66,7 +66,6 @@ func GetProfileAdmin(c *gin.Context) {
 		return
 	}
 
-	// Panggil fungsi yang benar untuk mencari berdasarkan UID string
 	user, err := models.FindUserByID(studentsUID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
@@ -144,15 +143,15 @@ func GetAdministratorByUID(c *gin.Context){
 	if err := database.DB.Where("admin_uid = ?", uid).First(&admin).Error; err !=nil{
 		if err == gorm.ErrRecordNotFound { 
 			c.JSON(http.StatusNotFound, gin.H{
-				"Error" : err.Error(),
 				"Message" : "Administrator Not Found",
+				"Error" : err.Error(),
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"Error" : err.Error(),
 			"Message" : "Database Error",
+			"Error" : err.Error(),
 		})
 	}
 

@@ -38,7 +38,7 @@ func (u *Administrator) BeforeSaveAdministrator(*gorm.DB) error {
 	u.AdminUID = UniqueId.String()
 
 	//Hash Password
-	hashedPassword, err := hashPassword(u.Password)
+	hashedPassword, err := hashPasswordAdministrator(u.Password)
 	if err != nil {
 		return err
 	}

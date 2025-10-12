@@ -4,9 +4,10 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HomeArticleResponse struct {
@@ -17,6 +18,7 @@ type HomeArticleResponse struct {
 	Author    string `json:"author"`
 	Thumbnail string `json:"thumbnail"`
 }
+
 type ArticleListResponse struct {
 	ArticleUID   string `json:"article_uid"`
 	JudulArticle string `json:"judul_article"`
@@ -32,6 +34,15 @@ type ArticleDetailResponse struct {
 	Category     models.Category `json:"category"`
 }
 
+type ArticleInput struct{
+	ArticleUID string `json:"article_uid"`
+	JudulArticle string `json:"judul_article"`
+	IsiArticle string `json:"isi_article"`
+	Author string `json:"author"`
+	CategoryUID string `json:"category_uid"`
+}
+
+
 func CreateArticle(c *gin.Context) {
 	judul := c.PostForm("judul_article")
 	isi := c.PostForm("isi_article")
@@ -39,35 +50,52 @@ func CreateArticle(c *gin.Context) {
 	categoryUID := c.PostForm("category_uid")
 
 	if judul == "" || isi == "" || categoryUID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Judul, isi, dan category_uid tidak boleh kosong"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status" : "Error",
+			"Message": "Judul, isi, dan category_uid tidak boleh kosong",
+		})
 		return
 	}
 
 	var categoryCount int64
 	database.DB.Model(&models.Category{}).Where("category_uid = ?", categoryUID).Count(&categoryCount)
 	if categoryCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Kategori tidak ditemukan!"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status" : "Error",
+			"Message": "Kategori tidak ditemukan!",
+		})
 		return
 	}
 
 	file, err := c.FormFile("thumbnails")
 	var imageData []byte
 	if err != nil && err != http.ErrMissingFile {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses file thumbnails"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status" : "Error",
+			"Message": "Gagal memproses file thumbnails",
+		})
 		return
 	}
 
 	if file != nil {
 		src, err := file.Open()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuka file"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"Status" : "Error",
+				"Message": "Gagal membuka file",
+				"Error"  : err.Error(),
+			})
 			return
 		}
 		defer src.Close()
 
 		imageData, err = ioutil.ReadAll(src)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membaca data file"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"Status" : "Error",
+				"Message": "Gagal membaca data file",
+				"Error" : err.Error(),
+			})
 			return
 		}
 	}
@@ -80,13 +108,18 @@ func CreateArticle(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&article).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan artikel"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message": "Gagal menyimpan artikel",
+			"Error" : err.Error(),
+		})
 		return
 	}
 
 	response := gin.H{
-		"message": "Artikel berhasil dibuat",
-		"data": gin.H{
+		"Status" : "Success",
+		"Message": "Artikel berhasil dibuat",
+		"Data": gin.H{
 			"article_uid":   article.ArticleUID,
 			"judul_article": article.JudulArticle,
 			"author":        article.Author,
@@ -95,56 +128,67 @@ func CreateArticle(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-// GetAllArticles mengambil semua artikel dengan lookup manual.
 func GetAllArticles(c *gin.Context) {
 	var articles []models.Article
-	if err := database.DB.Order("article_id desc").Find(&articles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data artikel"})
+	if err := database.DB.Order("article_uid desc").Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message": "Gagal mengambil data artikel",
+			"Error" : err.Error(),
+		})
 		return
 	}
 
 	// Jika tidak ada artikel, kembalikan array kosong
 	if len(articles) == 0 {
-		c.JSON(http.StatusOK, gin.H{"data": []models.Article{}})
+		c.JSON(http.StatusOK, gin.H{
+			"Status" : "Not Found",
+			"Message" : "Artikel Tidak Ditemukan",
+			"Data": []models.Article{},
+		})
 		return
 	}
 
-	// 1. Kumpulkan semua CategoryUID dari artikel
 	categoryUIDs := make([]string, len(articles))
 	for i, article := range articles {
 		categoryUIDs[i] = article.CategoryUID
 	}
 
-	// 2. Ambil semua kategori yang relevan dalam satu query
 	var categories []models.Category
 	database.DB.Where("category_uid IN ?", categoryUIDs).Find(&categories)
 
-	// 3. Buat map untuk lookup cepat: map[CategoryUID] -> NamaCategory
 	categoryMap := make(map[string]string)
 	for _, category := range categories {
 		categoryMap[category.CategoryUID] = category.NameCategory
 	}
 
-	// 4. Buat respons dengan data yang sudah digabungkan
 	var response []ArticleListResponse
 	for _, article := range articles {
 		response = append(response, ArticleListResponse{
 			ArticleUID:   article.ArticleUID,
 			JudulArticle: article.JudulArticle,
 			Author:       article.Author,
-			CategoryName: categoryMap[article.CategoryUID], // Ambil dari map
+			CategoryName: categoryMap[article.CategoryUID],
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	c.JSON(http.StatusOK, gin.H{
+		"Status" : "Success",
+		"Message" : "Berhasil Mendapatkan Data Artikel",
+		"data": response,
+	})
 }
 
-// GetArticleByUID mengambil satu artikel dengan lookup manual.
 func GetArticleByUID(c *gin.Context) {
 	uid := c.Param("uid")
+
 	var article models.Article
 	if err := database.DB.Where("article_uid = ?", uid).First(&article).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Artikel tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status" : "Error",
+			"Message": "Artikel tidak ditemukan",
+			"Error" : err.Error(),
+		})
 		return
 	}
 
@@ -159,21 +203,31 @@ func GetArticleByUID(c *gin.Context) {
 		Category:     category,
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	c.JSON(http.StatusOK, gin.H{
+		"Status" : "Success",
+		"Message" : "Berhasil Mendapatkan Data Artikel",
+		"Data": response,
+	})
 }
 
-// GetArticleThumbnail menyajikan gambar dari database.
 func GetArticleThumbnail(c *gin.Context) {
 	uid := c.Param("uid")
 	var article models.Article
 
 	if err := database.DB.Where("article_uid = ?", uid).First(&article).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Artikel tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status" : "Error",
+			"Message": "Artikel tidak ditemukan",
+			"Error" : err.Error(),
+		})
 		return
 	}
 
 	if article.Thumbnails == nil || len(article.Thumbnails) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Artikel ini tidak memiliki thumbnail"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status" : "Error",
+			"Message": "Artikel ini tidak memiliki thumbnail",
+		})
 		return
 	}
 
@@ -182,7 +236,21 @@ func GetArticleThumbnail(c *gin.Context) {
 func GetHomeArticles(c *gin.Context) {
 	var articles []models.Article
 	if err := database.DB.Order("created_at desc").Limit(10).Find(&articles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil artikel"})
+		
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message": "Gagal mengambil artikel",
+			"Error" : err.Error(),
+		})
+		return
+	}
+	
+	if len(articles) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"Status":  "Success",
+			"Message": "Data artikel tidak ada",
+			"Data":    []HomeArticleResponse{},
+		})
 		return
 	}
 
@@ -209,5 +277,78 @@ func GetHomeArticles(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	c.JSON(http.StatusOK, gin.H{
+		"Status" : "Success",
+		"Message" : "Berhasil Mendapatkan Data Artikel",
+		"Data": response,
+	})
+}
+
+func UpdateArticle(c *gin.Context){
+	uid := c.Param("uid")
+
+	var artikel models.Article
+
+	if err := database.DB.Where("article_uid = ?", uid).First(&artikel).Error; err != nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message": "UID Tidak Ditemukan",
+			"Error" : err.Error(),
+		})
+		return
+	}
+
+	var inputArticle ArticleInput
+	if err:= c.ShouldBindBodyWithJSON(&inputArticle);err !=nil{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status" : "Error",
+			"Message" : "Invalid Input Data",
+			"Error" : err.Error(),
+		})
+		return
+	}
+
+	if err := database.DB.Model(&artikel).Updates(inputArticle).Error; err != nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message" : "Internal Server Error",
+			"Error" : err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status" : "Success",
+		"Message" : "Berhasil Update Data Artikel",
+		"Data" : artikel,
+	})
+}
+
+func DeleteArticle(c *gin.Context){
+	uid := c.Param("uid")
+
+	 resultArtikel := database.DB.Where("article_uid = ?", uid).Delete(&models.Article{})
+
+	 if resultArtikel.Error != nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status" : "Error",
+			"Message" : "Failed Delete Data Artikel",
+		})
+		return
+	 }
+
+	 if resultArtikel.RowsAffected == 0{
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status" : "Error",
+			"Message" : "Artikel Tidak Ada",
+		})
+		return
+	 }
+
+	 c.JSON(http.StatusOK, gin.H{
+		"Status" : "Success",
+		"Message" : "Berhasil Menghapus Data Artikel",
+		"Data" : resultArtikel,
+	 })
+
 }
