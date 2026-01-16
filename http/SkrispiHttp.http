@@ -3,19 +3,48 @@ GET {{baseUrl}}
 
 # Administrator Fitur
 
+## Auth
+### Login Administrator
+POST {{baseUrl}}/loginAdministrator
+Content-Type: application/json
+{
+    "email : "",
+    "password" : "",
+}
+
 ## Role
 ### Create Role
-POST {{baseUrl}}/
+POST {{baseUrl}}{{roleUrl}}/createRole
+Content-Type: application/json
+{
+    "role_name" : "Super Administrator",
+    "description : "Role untuk mengakses semua fitur"
+}
 ### Get Role
+GET {{baseUrl}}/getRole
+Content-Type: application/json
 
 ### Get Role By Id
+GET {{baseUrl}}/getRoleById/123
+Content-Type: application/json
 
 ### Update Role
-
+PUT {{baseUrl}}/updateRole
 ### Delete Role
+DELETE {{baseUrl}}/deleteRole/123
 
 ### Create Administrator
 POST {{baseUrl}}/createAdmin
+Content-Type: application/json
+{
+    "" : "",
+    "" : "",
+    "" : "",
+    "" : "",
+    "" : "",
+    "" : "",
+    "" : "",
+}
 ###
 
 ### Create Sekolah

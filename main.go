@@ -68,12 +68,12 @@ func main() {
 
 	//Profile Students
 	protectedRoutes := router.Group("/api")
-	protectedRoutes.Use(middleware.RequireAuth)
+	protectedRoutes.Use(middleware.RequireAuth())
 	protectedRoutes.GET("/profileStudents", controllers.GetProfileStudents)
 
 	//Article Pakar Routes
 	ArticleRoutes := router.Group("/api/article/pakar")
-	ArticleRoutes.Use(middleware.RequireAuth)
+	ArticleRoutes.Use(middleware.RequireAuth())
 	ArticleRoutes.GET("/getArticles", controllers.GetAllArticles)
 	ArticleRoutes.POST("/createArticles", controllers.CreateArticle)
 	ArticleRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
@@ -104,7 +104,7 @@ func main() {
 	SchoolRoutes.DELETE("/deleteSchool/:uid")
 	//Manajemen Artikel Administrator
 	ArticleAdminRoutes := router.Group("/api/article/admin")
-	ArticleAdminRoutes.Use(middleware.RequireAuth)
+	ArticleAdminRoutes.Use(middleware.RequireAuth())
 	ArticleAdminRoutes.GET("/getArticles", controllers.GetAllArticles)
 	ArticleAdminRoutes.POST("/createArticles", controllers.CreateArticle)
 	ArticleAdminRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
@@ -112,7 +112,7 @@ func main() {
 	ArticleAdminRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 	//Manajemen Users
 	UsersAdminRoutes := router.Group("/api/users")
-	UsersAdminRoutes.Use(middleware.RequireAuth)
+	UsersAdminRoutes.Use(middleware.RequireAuth())
 	// User Students
 	UsersAdminRoutes.GET("/getAllStudents")
 	UsersAdminRoutes.POST("/createStudents")
