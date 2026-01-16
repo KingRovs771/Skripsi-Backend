@@ -1,29 +1,48 @@
 ### Check Connection Http API Golang
-GET http://localhost:8080
+GET {{baseUrl}}
 
-### Register Check
-POST http://localhost:8080/auth/register
+# Administrator Fitur
+
+## Role
+### Create Role
+POST {{baseUrl}}/
+### Get Role
+
+### Get Role By Id
+
+### Update Role
+
+### Delete Role
+
+### Create Administrator
+POST {{baseUrl}}/createAdmin
+###
+
+### Create Sekolah
+
+###
+
+
+# Fitur Students
+## Authentication
+### Register Students
+POST {{baseUrl}}/registerStudents
 Content-Type: application/json
-
 {
-  "nama_lengkap" : "Administrator",
-  "email" : "administrator@gmail.com",
-  "password" : "akusayangkamu"
+    "nisn" : "001000300",
+    "nama_lengkap" : "",
+    "npsn" : "",
+    "jenjang_pendidikan" : "",
+    "kelas" : "",
+    "no_hp" : "",
+    "alamat" : "",
+    "email" : "",
+    "password" : "",
 }
-
-### Auth Get Profile
-GET https://bingo-api-virid.vercel.app/api/user/userProfile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IiQyYiQxMCRubTRlUGdCQzcvbER6eXVQMEFkTHdlMTdRZ2dsQW9lZW1ZanUyc0hpaDV2RGxSMm5yR01RYSIsInJvbGUiOiJVc2VyIiwiZW1haWwiOiJhZG1pbmlzdHJhdG9yQGdtYWlsLmNvbSIsImlhdCI6MTc0OTIxMTg4MCwiZXhwIjoxNzQ5MjE1NDgwfQ.jkTHx8cORWhn0vsOEBPAJQj8X8zYpgUakpOe0oy-ixk
+### Login Students
+POST {{baseUrl}}/loginStudents
 Content-Type: application/json
-
-### Request Create Article (Requires authentication)
-POST https://bingo-api-virid.vercel.app/api/article/articles
-# Ganti dengan Token yang diambil setelah login
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IiQyYiQxMCRubTRlUGdCQzcvbER6eXVQMEFkTHdlMTdRZ2dsQW9lZW1ZanUyc0hpaDV2RGxSMm5yR01RYSIsInJvbGUiOiJVc2VyIiwiZW1haWwiOiJhZG1pbmlzdHJhdG9yQGdtYWlsLmNvbSIsImlhdCI6MTc0OTIxMTg4MCwiZXhwIjoxNzQ5MjE1NDgwfQ.jkTHx8cORWhn0vsOEBPAJQj8X8zYpgUakpOe0oy-ixk
-
 {
-  "judul_article": "Artikel Dengan Gambar",
-  "description": "Ini adalah artikel yang menyertakan URL gambar thumbnail.",
-  "image_thumb": "https://placehold.co/800x450/007bff/ffffff?text=ExpressJS_Tutorial"
+    "email" :"dumpstudents",
+    "password" :"passwordku123",
 }

@@ -26,10 +26,8 @@ func main() {
 		&models.Article{},
 		&models.Aturan{},
 		&models.Category{},
-		&models.Gejala{},
+		&models.CategoryPenyakit{},
 		&models.HasilDiagnosis{},
-		&models.Kuisioner{},
-		&models.OpsiJawaban{},
 		&models.Pakar{},
 		&models.Penyakit{},
 		&models.Pertanyaan{},
@@ -37,6 +35,8 @@ func main() {
 		&models.Sekolah{},
 		&models.Students{},
 		&models.Teachers{},
+		&models.TestAnswer{},
+		&models.TestSession{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
@@ -60,8 +60,8 @@ func main() {
 
 	//Login Routes
 	AuthRoutes := router.Group("/auth")
-	AuthRoutes.POST("/register", controllers.RegisterStudents)
-	AuthRoutes.POST("/login", controllers.LoginStudents)
+	AuthRoutes.POST("/registerStudents", controllers.RegisterStudents)
+	AuthRoutes.POST("/loginStudents", controllers.LoginStudents)
 	AuthRoutes.POST("/loginPakar")
 	AuthRoutes.POST("/loginAdmin")
 	AuthRoutes.POST("/loginTeacher")
@@ -72,7 +72,7 @@ func main() {
 	protectedRoutes.GET("/profileStudents", controllers.GetProfileStudents)
 
 	//Article Pakar Routes
-	ArticleRoutes := router.Group("/api/article")
+	ArticleRoutes := router.Group("/api/article/pakar")
 	ArticleRoutes.Use(middleware.RequireAuth)
 	ArticleRoutes.GET("/getArticles", controllers.GetAllArticles)
 	ArticleRoutes.POST("/createArticles", controllers.CreateArticle)
@@ -80,13 +80,57 @@ func main() {
 	ArticleRoutes.PUT("/updateArticle", controllers.UpdateArticle)
 	ArticleRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 
-	//Administrator Route
+	// Administrator Fitur
+	// Manajemen Pengguna
 	AdminRoutes := router.Group("/api/admin")
 	AdminRoutes.GET("/getAdmin", controllers.GetAllAdministrator)
 	AdminRoutes.POST("/createAdmin", controllers.CreateAdministrator)
 	AdminRoutes.GET("/getAdmin/:uid", controllers.GetAdministratorByUID)
 	AdminRoutes.PUT("/updateAdmin", controllers.UpdateAdministrator)
 	AdminRoutes.DELETE("/deleteAdmin", controllers.DeleteAdministrator)
+	//Manajemen Role
+	RoleRoutes := router.Group("/api/role")
+	RoleRoutes.POST("/createRole")
+	RoleRoutes.GET("/getRole")
+	RoleRoutes.GET("/getRoleById/:uid")
+	RoleRoutes.PUT("/updateRole")
+	RoleRoutes.DELETE("/deleteRole/:uid")
+	//Manajemen Sekolah
+	SchoolRoutes := router.Group("/school")
+	SchoolRoutes.POST("/createSchool")
+	SchoolRoutes.GET("/getSchool")
+	SchoolRoutes.GET("/getSchoolById/:uid")
+	SchoolRoutes.PUT("/updateSchool")
+	SchoolRoutes.DELETE("/deleteSchool/:uid")
+	//Manajemen Artikel Administrator
+	ArticleAdminRoutes := router.Group("/api/article/admin")
+	ArticleAdminRoutes.Use(middleware.RequireAuth)
+	ArticleAdminRoutes.GET("/getArticles", controllers.GetAllArticles)
+	ArticleAdminRoutes.POST("/createArticles", controllers.CreateArticle)
+	ArticleAdminRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
+	ArticleAdminRoutes.PUT("/updateArticle", controllers.UpdateArticle)
+	ArticleAdminRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
+	//Manajemen Users
+	UsersAdminRoutes := router.Group("/api/users")
+	UsersAdminRoutes.Use(middleware.RequireAuth)
+	// User Students
+	UsersAdminRoutes.GET("/getAllStudents")
+	UsersAdminRoutes.POST("/createStudents")
+	UsersAdminRoutes.GET("/getStudentsById/:uid")
+	UsersAdminRoutes.PUT("/updateStudents")
+	UsersAdminRoutes.DELETE("/deleteStudents/:uid")
+	// User Pakar
+	UsersAdminRoutes.GET("/getAllPakar")
+	UsersAdminRoutes.POST("/createPakar")
+	UsersAdminRoutes.GET("/getPakarById/:uid")
+	UsersAdminRoutes.PUT("/updatePakar")
+	UsersAdminRoutes.DELETE("/deletePakar/:uid")
+	// User Teacher
+	UsersAdminRoutes.GET("/getAllTeachers")
+	UsersAdminRoutes.POST("/createTeacher")
+	UsersAdminRoutes.GET("/getTeacherById/:uid")
+	UsersAdminRoutes.PUT("/updateTeacher")
+	UsersAdminRoutes.DELETE("/deleteTeacher/:uid")
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

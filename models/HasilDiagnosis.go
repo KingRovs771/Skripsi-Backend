@@ -3,14 +3,13 @@ package models
 import "time"
 
 type HasilDiagnosis struct {
-	ResultId         int64     `gorm:"primaryKey;uniqueIndex" json:"result_id"`
-	StudentId        int64     `gorm:"type:int" json:"student_id"`
-	TestSessionId    int64     `gorm:"type:varchar" json:"test_session_id"`
-	Phq9Score        int64     `gorm:"type:int" json:"phq9_score"`
-	Gad7Score        int64     `gorm:"type:int" json:"gad7_score"`
-	StressScore      int64     `gorm:"type:int" json:"stress_score"`
-	FinalDiagnosis   string    `gorm:"type:varchar(255)" json:"final_diagnosis"`
-	ConfidenceLevel  float64   `gorm:"type:float" json:"confidence_level"`
-	IsVerfiedByRules bool      `gorm:"type:bool" json:"is_verfied_by_rules"`
-	CreatedAt        time.Time `gorm:"type:timestamp" json:"created_at"`
+	ResultId             int       `gorm:"primary_key;uniqueIndex" json:"result_id"`
+	ResultUID            string    `gorm:"varchar(255)" json:"result_uid"`
+	SessionTestUID       string    `gorm:"varchar(255)" json:"session_test_uid"`
+	NNPredictionPenyakit string    `gorm:"varchar(255)" json:"nn_prediction_penyakit"`
+	NNConfidenceScore    float64   `gorm:"type:decimal(10,2)" json:"nn_confidence_score"`
+	BCVerificationStatus string    `gorm:"varchar(255)" json:"bc_verification_status"`
+	FinalPenyakit        string    `gorm:"varchar(255)" json:"final_penyakit"`
+	CreatedAt            time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt             time.Time `gorm:"type:timestamp" json:"update_at"`
 }

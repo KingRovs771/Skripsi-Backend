@@ -27,10 +27,8 @@ func RegisterStudents(c *gin.Context) {
 	RegisterStudents := models.Students{
 		NISN:              registerUser.NISN,
 		NamaLengkap:       registerUser.NamaLengkap,
-		NamaInisial:       registerUser.NamaInisial,
 		JenjangPendidikan: registerUser.JenjangPendidikan,
 		Kelas:             registerUser.Kelas,
-		Username:          registerUser.Username,
 		Password:          registerUser.Password,
 		Email:             registerUser.Email,
 	}
