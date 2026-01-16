@@ -26,16 +26,17 @@ func main() {
 		&models.Article{},
 		&models.Aturan{},
 		&models.Category{},
-		&models.DetailAturan{},
-		&models.DetailDiagnosis{},
 		&models.Gejala{},
 		&models.HasilDiagnosis{},
 		&models.Kuisioner{},
 		&models.OpsiJawaban{},
+		&models.Pakar{},
 		&models.Penyakit{},
 		&models.Pertanyaan{},
 		&models.Role{},
+		&models.Sekolah{},
 		&models.Students{},
+		&models.Teachers{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
@@ -51,16 +52,26 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	//Login Routes
-	publicRoutes := router.Group("/auth")
-	publicRoutes.POST("/register", controllers.RegisterStudents)
-	publicRoutes.POST("/login", controllers.LoginStudents)
+	//Index Web
+	HomeRoutes := router.Group("/api/home")
+	HomeRoutes.GET("/articles", controllers.GetHomeArticles)
+	HomeRoutes.GET("/articles/:uid", controllers.GetHomeArticleByUID)
+	HomeRoutes.GET("/allArticles", controllers.GetAllAriclesHome)
 
+	//Login Routes
+	AuthRoutes := router.Group("/auth")
+	AuthRoutes.POST("/register", controllers.RegisterStudents)
+	AuthRoutes.POST("/login", controllers.LoginStudents)
+	AuthRoutes.POST("/loginPakar")
+	AuthRoutes.POST("/loginAdmin")
+	AuthRoutes.POST("/loginTeacher")
+
+	//Profile Students
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.RequireAuth)
-	protectedRoutes.GET("/profile", controllers.GetProfileStudents)
+	protectedRoutes.GET("/profileStudents", controllers.GetProfileStudents)
 
-	//Article Admin Routes
+	//Article Pakar Routes
 	ArticleRoutes := router.Group("/api/article")
 	ArticleRoutes.Use(middleware.RequireAuth)
 	ArticleRoutes.GET("/getArticles", controllers.GetAllArticles)
@@ -68,10 +79,6 @@ func main() {
 	ArticleRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
 	ArticleRoutes.PUT("/updateArticle", controllers.UpdateArticle)
 	ArticleRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
-	
-	//Index Web
-	DashboardRoutes := router.Group("/api/home")	
-	DashboardRoutes.GET("/articles", controllers.GetHomeArticles)
 
 	//Administrator Route
 	AdminRoutes := router.Group("/api/admin")

@@ -3,24 +3,30 @@ package models
 import (
 	"Skripsi-Backend/database"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/html"
 	"gorm.io/gorm"
-	"strings"
 )
 
 type Students struct {
-	StudentsId        int64  `gorm:"primaryKey;uniqueIndex" json:"students_id"`
-	StudentsUID       string `gorm:"type:varchar(90)" json:"students_uid"`
-	NISN              string `gorm:"type:varchar(20)" json:"nisn"`
-	NamaLengkap       string `gorm:"type:varchar(90)" json:"nama_lengkap"`
-	NamaInisial       string `gorm:"type:varchar(90)" json:"nama_inisial"`
-	JenjangPendidikan string `gorm:"type:varchar" json:"jenjang_pendidikan"`
-	Kelas             int64  `gorm:"type:int" json:"kelas"`
-	Email             string `gorm:"type:varchar(100)" json:"email"`
-	Username          string `gorm:"type:varchar(90)" json:"username"`
-	Password          string `gorm:"type:varchar(255)" json:"password"`
+	StudentsId        int64     `gorm:"primaryKey;uniqueIndex" json:"students_id"`
+	StudentsUID       string    `gorm:"type:varchar(90)" json:"students_uid"`
+	RoleUID           string    `gorm:"type:varchar(90)" json:"role_uid"`
+	NISN              string    `gorm:"type:varchar(20)" json:"nisn"`
+	NamaLengkap       string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
+	NPSN              string    `gorm:"type:int" json:"npsn"`
+	JenjangPendidikan string    `gorm:"type:varchar" json:"jenjang_pendidikan"`
+	Kelas             int64     `gorm:"type:int" json:"kelas"`
+	NoHp              string    `gorm:"type:varchar(20)" json:"no_hp"`
+	Alamat            string    `gorm:"type:text" json:"alamat"`
+	Email             string    `gorm:"type:varchar(100)" json:"email"`
+	Password          string    `gorm:"type:varchar(255)" json:"password"`
+	CreatedAt         time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt          time.Time `gorm:"type:timestamp" json:"update_at"`
 }
 
 func hashPassword(password string) (string, error) {
@@ -43,7 +49,6 @@ func (u *Students) BeforeSave(*gorm.DB) error {
 	}
 	u.Password = hashedPassword
 
-	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
 
 	return nil
@@ -71,7 +76,7 @@ func FindUserByEmail(email string) (Students, error) {
 }
 func FindUserByID(StudentsUID string) (Students, error) {
 	var student Students
-	// Gunakan .Where() untuk mencari di kolom spesifik "students_uid"
+
 	err := database.DB.Where("students_uid = ?", StudentsUID).First(&student).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

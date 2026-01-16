@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -12,16 +13,18 @@ import (
 )
 
 type Administrator struct {
-	AdminId     int64  `gorm:"primaryKey;uniqueIndex" json:"admin_id"`
-	AdminUID    string `gorm:"type:varchar(255)" json:"admin_uid"`
-	RoleId      int64  `gorm:"type:int" json:"role_id"`
-	NamaLengkap string `gorm:"type:varchar(90)" json:"nama_lengkap"`
-	Phone       string `gorm:"type:varchar(20)" json:"phone"`
-	Email       string `gorm:"type:varchar(90)" json:"email"`
-	Alamat      string `gorm:"type:text" json:"alamat"`
-	Username    string `gorm:"type:varchar(90)" json:"username"`
-	Password    string `gorm:"type:varchar(90)" json:"password"`
-	PhotoFile   []byte `gorm:"type:bytea;not null" json:"face_data"`
+	AdminId     int64     `gorm:"primaryKey;uniqueIndex" json:"admin_id"`
+	AdminUID    string    `gorm:"type:varchar(255)" json:"admin_uid"`
+	RoleUID     int64     `gorm:"type:int" json:"role_uid"`
+	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
+	Phone       string    `gorm:"type:varchar(20)" json:"phone"`
+	Email       string    `gorm:"type:varchar(90)" json:"email"`
+	Alamat      string    `gorm:"type:text" json:"alamat"`
+	Username    string    `gorm:"type:varchar(90)" json:"username"`
+	Password    string    `gorm:"type:varchar(90)" json:"password"`
+	PhotoFile   []byte    `gorm:"type:bytea;not null" json:"face_data"`
+	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
 }
 
 func hashPasswordAdministrator(password string) (string, error) {
