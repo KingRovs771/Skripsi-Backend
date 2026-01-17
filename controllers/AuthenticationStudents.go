@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -11,92 +14,142 @@ func RegisterStudents(c *gin.Context) {
 	var registerUser struct {
 		NISN              string `json:"nisn"`
 		NamaLengkap       string `json:"nama_lengkap"`
-		NamaInisial       string `json:"nama_inisial"`
+		NoHp              string `json:"no_hp"`
+		Alamat            string `json:"alamat"`
+		NPSN              string `json:"npsn"`
 		JenjangPendidikan string `json:"jenjang_pendidikan"`
 		Kelas             int64  `json:"kelas"`
-		Username          string `json:"username"`
-		Password          string `json:"password"`
-		Email             string `json:"email"`
+		Email             string `json:"email" binding:"required, email"`
+		Password          string `json:"password" binding:"required, min=8"`
 	}
 
 	if err := c.BindJSON(&registerUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Error",
+			"Message": "Invalid Input Error",
+			"Error":   err.Error(),
+		})
 		return
 	}
 
-	RegisterStudents := models.Students{
+	registerStudents := models.Students{
 		NISN:              registerUser.NISN,
 		NamaLengkap:       registerUser.NamaLengkap,
+		NoHp:              registerUser.NoHp,
+		Alamat:            registerUser.Alamat,
+		NPSN:              registerUser.NPSN,
 		JenjangPendidikan: registerUser.JenjangPendidikan,
 		Kelas:             registerUser.Kelas,
-		Password:          registerUser.Password,
 		Email:             registerUser.Email,
+		Password:          registerUser.Password,
 	}
-	savedStudents, err := RegisterStudents.Save()
+	savedStudents, err := registerStudents.Save()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Internal Error",
+			"Error":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"Status":  http.StatusOK,
-		"Message": "Data Register Telah Berhasil di Simpan, Silakan Lanjutkan Proses Login",
-		"data":    savedStudents,
+		"Status":  "Success",
+		"Message": "Register Berhasil, Silakan Lanjutkan Proses Login",
+		"Data":    savedStudents,
 	})
+
 }
 
 func LoginStudents(c *gin.Context) {
-	var input struct {
-		Email    string `json:"email" binding:"required,email"`
+	var loginUser struct {
+		Email    string `json:"email" binding:"required, email"`
 		Password string `json:"password" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&loginUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Error",
+			"Message": "Invalid Input Error",
+			"Error":   err.Error(),
+		})
 		return
 	}
 
-	loginStudents, err := models.FindUserByEmail(input.Email)
+	loginStudents, err := models.FindUserByEmail(loginUser.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email atau password salah"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"Status":  "Error",
+				"Message": "User Not Found",
+				"Error":   err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Internal Error",
+			"Error":   err.Error(),
+		})
 		return
 	}
-
-	err = loginStudents.ValidatePassword(input.Password)
+	err = loginStudents.ValidatePassword(loginUser.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email atau password salah"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"Status":  "Error",
+			"Message": "Email atau Password Salah, Silakan Coba Lagi",
+			"Error":   err.Error(),
+		})
 		return
 	}
-	jwt, err := utils.GenerateJWTStudents(loginStudents)
+	jwt, err := utils.GenerateJWT(loginStudents.StudentsUID, loginStudents.Email, "Students")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Internal Error",
+			"Error":   err.Error(),
+		})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"token": jwt})
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "Success",
+		"Message": "Login Success",
+		"Token":   jwt,
+		"Data": gin.H{
+			"student_uid":  loginStudents.StudentsUID,
+			"nisn":         loginStudents.NISN,
+			"nama_lengkap": loginStudents.NamaLengkap,
+			"email":        loginStudents.Email,
+		},
+	})
 }
 
 func GetProfileStudents(c *gin.Context) {
-	studentsUIDInterface, exists := c.Get("students_uid")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Gagal mendapatkan user dari context"})
-		return
-	}
-	studentsUID, ok := studentsUIDInterface.(string)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Tipe UID user tidak valid"})
-		return
-	}
-
-	// Panggil fungsi yang benar untuk mencari berdasarkan UID string
-	user, err := models.FindUserByID(studentsUID)
+	claims, err := utils.ValidateJWT(c)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"Status":  "Error",
+			"Message": "Invalid Token",
+			"Error":   err.Error(),
+		})
 		return
 	}
-
+	studentsUID := claims.ID
+	var students models.Students
+	if err := database.DB.Select(`students.student_id, students.students_uid, students.role_uid,
+				students.nisn, students.nama_lengkap, students.npsn,
+				students.jenjang_pendidikan, students.kelas, students.no_hp,
+				students.alamat, students.email, students.created_at, students.update_at,
+				roles.role_name`).Joins("left join roles on roles.role_uid = students.role_uid").Where("students_uid = ?", studentsUID).First(&students).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"Status":  "Error",
+			"Message": "Invalid Token",
+			"Error":   err.Error(),
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"Status":  http.StatusOK,
-		"Message": "Data Berhasil Di Dapatkan",
-		"Data":    user,
+		"Status":  "Success",
+		"Message": "Success",
+		"Data":    students,
 	})
 }

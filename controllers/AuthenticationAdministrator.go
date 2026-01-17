@@ -82,10 +82,14 @@ func GetProfileAdministrator(c *gin.Context) {
 	adminUID := claims.ID
 
 	var admin models.Administrator
-	if err := database.DB.Where("admin_uid = ?", adminUID).First(&admin).Error; err != nil {
+	if err := database.DB.Select("administrators.admin_id, administrators.admin_uid, administrators.role_uid,"+
+		"administrators.nama_lengkap, administrators.phone, administrators.email,"+
+		"administrators.alamat, administrators.created_at, administrators.updated_at,"+
+		"roles.role_name",
+	).Joins("left join roles on roles.role_uid = administrators.role_uid").Where("administrators.admin_uid = ?", adminUID).First(&admin).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Error",
-			"Message": "Administrator not found",
+			"Message": "Profile administrator not found",
 			"Error":   err.Error(),
 		})
 		return

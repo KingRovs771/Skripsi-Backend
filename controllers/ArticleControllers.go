@@ -171,7 +171,6 @@ func GetAllArticles(c *gin.Context) {
 		return
 	}
 
-	// Jika tidak ada artikel, kembalikan array kosong
 	if len(articles) == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"Status":  "Not Found",
