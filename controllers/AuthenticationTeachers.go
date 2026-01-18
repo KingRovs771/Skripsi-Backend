@@ -5,9 +5,10 @@ import (
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
 	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func LoginTeachers(c *gin.Context) {
@@ -61,7 +62,7 @@ func LoginTeachers(c *gin.Context) {
 		"Token":   token,
 		"User": gin.H{
 			"NIP":          TeachersModel.NIP,
-			"admin_uid":    TeachersModel.TeachersUID,
+			"teachers_uid": TeachersModel.TeachersUID,
 			"nama_lengkap": TeachersModel.NamaLengkap,
 			"email":        TeachersModel.Email,
 		},
@@ -96,7 +97,7 @@ func GetProfileTeachers(c *gin.Context) {
 		"Message": "Teachers Profile Found",
 		"Data": gin.H{
 			"nip":          TeachersProfile.NIP,
-			"admin_uid":    TeachersProfile.TeachersUID,
+			"teacher_uid":  TeachersProfile.TeachersUID,
 			"role_uid":     TeachersProfile.RoleUID,
 			"nama_lengkap": TeachersProfile.NamaLengkap,
 			"phone":        TeachersProfile.Phone,
