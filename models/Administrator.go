@@ -20,7 +20,6 @@ type Administrator struct {
 	Phone       string    `gorm:"type:varchar(20)" json:"phone"`
 	Email       string    `gorm:"type:varchar(90)" json:"email"`
 	Alamat      string    `gorm:"type:text" json:"alamat"`
-	Username    string    `gorm:"type:varchar(90)" json:"username"`
 	Password    string    `gorm:"type:varchar(90)" json:"password"`
 	PhotoFile   []byte    `gorm:"type:bytea;not null" json:"face_data"`
 	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
@@ -47,7 +46,6 @@ func (u *Administrator) BeforeSaveAdministrator(*gorm.DB) error {
 	}
 	u.Password = hashedPassword
 
-	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
 
 	return nil
