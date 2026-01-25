@@ -34,6 +34,10 @@ func hashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
+func (u *Students) ValidatePassword(password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+}
+
 func (u *Students) BeforeSave(*gorm.DB) error {
 	//Create UUID
 	UniqueId, err := uuid.NewRandom()
@@ -49,7 +53,24 @@ func (u *Students) BeforeSave(*gorm.DB) error {
 	}
 	u.Password = hashedPassword
 
+	u.NISN = html.EscapeString(strings.TrimSpace(u.NISN))
+	u.NamaLengkap = html.EscapeString(strings.TrimSpace(u.NamaLengkap))
+	u.NoHp = html.EscapeString(strings.TrimSpace(u.Email))
+	u.Alamat = html.EscapeString(strings.TrimSpace(u.Alamat))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+	u.CreatedAt = time.Now()
+
+	return nil
+}
+
+func (u *Students) BeforeUpdate() error {
+
+	u.NISN = html.EscapeString(strings.TrimSpace(u.NISN))
+	u.NamaLengkap = html.EscapeString(strings.TrimSpace(u.NamaLengkap))
+	u.NoHp = html.EscapeString(strings.TrimSpace(u.Email))
+	u.Alamat = html.EscapeString(strings.TrimSpace(u.Alamat))
+	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+	u.UpdateAt = time.Now()
 
 	return nil
 }
@@ -62,8 +83,35 @@ func (u *Students) Save() (*Students, error) {
 	return u, nil
 }
 
-func (u *Students) ValidatePassword(password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+func GetAllStudents() ([]Students, error) {
+	var students []Students
+	err := database.DB.Find(&students).Error
+	if err != nil {
+		return []Students{}, err
+	}
+	return students, nil
+}
+
+func GetStudentsById(uid string) (Students, error) {
+	var students Students
+	err := database.DB.Where("students_uid = ?", uid).First(&students).Error
+	if err != nil {
+		return Students{}, err
+	}
+	return students, nil
+}
+
+func (u *Students) UpdateStudents(uid string) error {
+	err := database.DB.Where("students_uid = ?", uid).First(&u).Error
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func DeleteStudents(uid string) error {
+	err := database.DB.Where("students_uid = ?", uid).Delete(&Students{}).Error
+	return err
 }
 
 func FindUserByEmail(email string) (Students, error) {

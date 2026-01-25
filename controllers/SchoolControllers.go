@@ -8,6 +8,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetSekolah(c *gin.Context) {
+	var Sekolah []models.Sekolah
+
+	if len(Sekolah) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status":  "Not Found",
+			"Message": "Data Sekolah Tidak Ditemukan",
+			"Data":    "0",
+		})
+		return
+	}
+
+	if err := database.DB.Find(&Sekolah).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"Status":  "Not Found",
+			"Message": "Data Sekolah Tidak Ditemukan",
+			"Data":    Sekolah,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Data Sekolah Ditemukan",
+		"Data":    Sekolah,
+	})
+}
+
 func CreateSchool(c *gin.Context) {
 	var input struct {
 		NPSN          int64  `json:"npsn" binding:"required"`
