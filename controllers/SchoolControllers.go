@@ -10,27 +10,27 @@ import (
 
 func GetSekolah(c *gin.Context) {
 	var Sekolah []models.Sekolah
+	if err := database.DB.Find(&Sekolah).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Gagal mengambil data dari database",
+			"Error":   err.Error(),
+		})
+		return
+	}
 
 	if len(Sekolah) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Not Found",
 			"Message": "Data Sekolah Tidak Ditemukan",
-			"Data":    "0",
+			"Data":    []models.Sekolah{}, // Kembalikan array kosong, bukan string "0"
 		})
 		return
 	}
 
-	if err := database.DB.Find(&Sekolah).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"Status":  "Not Found",
-			"Message": "Data Sekolah Tidak Ditemukan",
-			"Data":    Sekolah,
-		})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"Status":  "OK",
-		"Message": "Data Sekolah Ditemukan",
+		"Message": "Data Sekolah Berhasil Diambil",
 		"Data":    Sekolah,
 	})
 }
@@ -57,6 +57,15 @@ func CreateSchool(c *gin.Context) {
 
 	result, err := sekolah.SaveSekolah()
 	if err != nil {
+		// Cek apakah errornya karena NPSN duplikat
+		if err.Error() == "NPSN tersebut sudah terdaftar di sistem" {
+			c.JSON(http.StatusConflict, gin.H{
+				"status":  http.StatusConflict,
+				"message": err.Error(),
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -86,10 +95,10 @@ func UpdateSekolah(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var input struct {
-		NPSN          *int64  `json:"npsn,omitempty"`
-		NamaSekolah   *string `json:"nama_sekolah,omitempty" binding:"omitempty,max=100"`
-		Jenjang       *string `json:"jenjang,omitempty" binding:"omitempty,max=20"`
-		AlamatSekolah *string `json:"alamat_sekolah,omitempty"`
+		NPSN          *int64  `json:"npsn" binding:"required"`
+		NamaSekolah   *string `json:"nama_sekolah" binding:"required,max=100"`
+		Jenjang       *string `json:"jenjang" binding:"required,max=20"`
+		AlamatSekolah *string `json:"alamat_sekolah"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -125,7 +134,7 @@ func UpdateSekolah(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Data sekolah berhasil diperbarui",
-		"data":    sekolah,
+		"Data":    sekolah,
 	})
 }
 func DeleteSekolah(c *gin.Context) {

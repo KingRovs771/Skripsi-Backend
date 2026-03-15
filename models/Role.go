@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type Role struct {
 	RoleId      int64     `gorm:"primaryKey;uniqueIndex" json:"role_id"`
@@ -9,4 +14,11 @@ type Role struct {
 	Description string    `gorm:"type:text" json:"description"`
 	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
+}
+
+func (r *Role) BeforeSave(tx *gorm.DB) (err error) {
+	if r.RoleUID == "" {
+		r.RoleUID = uuid.New().String()
+	}
+	return
 }

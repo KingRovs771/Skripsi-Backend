@@ -5,9 +5,10 @@ import (
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
 	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func RegisterStudents(c *gin.Context) {
@@ -33,15 +34,14 @@ func RegisterStudents(c *gin.Context) {
 	}
 
 	registerStudents := models.Students{
-		NISN:              registerUser.NISN,
-		NamaLengkap:       registerUser.NamaLengkap,
-		NoHp:              registerUser.NoHp,
-		Alamat:            registerUser.Alamat,
-		NPSN:              registerUser.NPSN,
-		JenjangPendidikan: registerUser.JenjangPendidikan,
-		Kelas:             registerUser.Kelas,
-		Email:             registerUser.Email,
-		Password:          registerUser.Password,
+		NISN:        registerUser.NISN,
+		NamaLengkap: registerUser.NamaLengkap,
+		NoHp:        registerUser.NoHp,
+		Alamat:      registerUser.Alamat,
+		NPSN:        registerUser.NPSN,
+		Kelas:       registerUser.Kelas,
+		Email:       registerUser.Email,
+		Password:    registerUser.Password,
 	}
 	savedStudents, err := registerStudents.Save()
 	if err != nil {

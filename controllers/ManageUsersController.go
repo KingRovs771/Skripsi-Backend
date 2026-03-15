@@ -196,16 +196,15 @@ func CreateStudents(c *gin.Context) {
 	}
 
 	st := models.Students{
-		RoleUID:           inputStudents.RoleUID,
-		NISN:              inputStudents.NISN,
-		NamaLengkap:       inputStudents.NamaLengkap,
-		NoHp:              inputStudents.NoHp,
-		Alamat:            inputStudents.Alamat,
-		NPSN:              inputStudents.NPSN,
-		JenjangPendidikan: inputStudents.JenjangPendidikan,
-		Kelas:             inputStudents.Kelas,
-		Email:             inputStudents.Email,
-		Password:          inputStudents.Password,
+		RoleUID:     inputStudents.RoleUID,
+		NISN:        inputStudents.NISN,
+		NamaLengkap: inputStudents.NamaLengkap,
+		NoHp:        inputStudents.NoHp,
+		Alamat:      inputStudents.Alamat,
+		NPSN:        inputStudents.NPSN,
+		Kelas:       inputStudents.Kelas,
+		Email:       inputStudents.Email,
+		Password:    inputStudents.Password,
 	}
 	savedStudents, err := st.Save()
 	if err != nil {
@@ -312,9 +311,6 @@ func UpdateStudents(c *gin.Context) {
 	}
 	if input.NamaLengkap != nil {
 		student.NamaLengkap = *input.NamaLengkap
-	}
-	if input.JenjangPendidikan != nil {
-		student.JenjangPendidikan = *input.JenjangPendidikan
 	}
 	if input.Kelas != nil {
 		student.Kelas = *input.Kelas

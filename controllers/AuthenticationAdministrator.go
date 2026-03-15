@@ -4,10 +4,16 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 type LoginInput struct {
@@ -60,6 +66,30 @@ func LoginAdministrator(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	// --- IMPLEMENTASI REDIS: CACHING PROFILE ---
+
+	// Siapkan data untuk disimpan di Redis
+	adminCache := gin.H{
+		"admin_id":     admin.AdminId,
+		"admin_uid":    admin.AdminUID,
+		"nama_lengkap": admin.NamaLengkap,
+		"email":        admin.Email,
+		"role":         "Administrator",
+	}
+
+	// Marshal data ke JSON
+	jsonData, _ := json.Marshal(adminCache)
+
+	tokenLifespanStr := os.Getenv("TOKEN_HOUR_LIFESPAN")
+	tokenLifespan, _ := strconv.Atoi(tokenLifespanStr)
+	if tokenLifespan == 0 {
+		tokenLifespan = 1
+	}
+
+	err = database.RDB.Set(database.Ctx, "profile:"+admin.AdminUID, jsonData, time.Hour*time.Duration(tokenLifespan)).Err()
+	if err != nil {
+		fmt.Println("Gagal menyimpan cache ke Redis:", err)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"Message": "Login berhasil",
@@ -82,11 +112,11 @@ func GetProfileAdministrator(c *gin.Context) {
 	adminUID := claims.ID
 
 	var admin models.Administrator
-	if err := database.DB.Select("administrators.admin_id, administrators.admin_uid, administrators.role_uid,"+
-		"administrators.nama_lengkap, administrators.phone, administrators.email,"+
-		"administrators.alamat, administrators.created_at, administrators.updated_at,"+
-		"roles.role_name",
-	).Joins("left join roles on roles.role_uid = administrators.role_uid").Where("administrators.admin_uid = ?", adminUID).First(&admin).Error; err != nil {
+	if err := database.DB.Table("administrators"). // Mulai dari tabel administrators
+							Select("administrators.*, roles.role_name"). // Ambil semua kolom admin + role_name
+							Joins("left join roles on roles.role_uid = administrators.role_uid").
+							Where("administrators.admin_uid = ?", adminUID).
+							First(&admin).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Error",
 			"Message": "Profile administrator not found",
@@ -103,12 +133,29 @@ func GetProfileAdministrator(c *gin.Context) {
 			"admin_id":     admin.AdminId,
 			"admin_uid":    admin.AdminUID,
 			"role_uid":     admin.RoleUID,
+			"role_name":    admin.RoleName,
 			"nama_lengkap": admin.NamaLengkap,
 			"phone":        admin.Phone,
 			"email":        admin.Email,
 			"alamat":       admin.Alamat,
 			"created_at":   admin.CreatedAt,
-			"updated_at":   admin.UpdateAt,
+			"update_at":    admin.UpdateAt,
 		},
 	})
+}
+
+func Logout(c *gin.Context) {
+	tokenString := utils.GetTokenFromRequest(c)
+	if tokenString == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"Message": "Token tidak ditemukan"})
+		return
+	}
+
+	err := database.RDB.Set(database.Ctx, tokenString, "blacklisted", time.Hour*24).Err()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"Message": "Gagal logout"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Message": "Logout berhasil"})
 }

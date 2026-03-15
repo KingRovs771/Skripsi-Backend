@@ -5,6 +5,7 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/middleware"
 	"Skripsi-Backend/models"
+	"Skripsi-Backend/seeder"
 	"log"
 	"os"
 	"time"
@@ -21,6 +22,7 @@ func main() {
 	}
 
 	database.Connect()
+	database.ConnectRedis()
 	err = database.DB.AutoMigrate(
 		&models.Administrator{},
 		&models.Article{},
@@ -41,6 +43,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
 	}
+
+	//Seeder
+	seeder.SeederRole()
+	seeder.SeederSekolah()
+	seeder.SeederUsersAdministrator()
+	seeder.SeederCategories()
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
@@ -65,6 +73,7 @@ func main() {
 	AuthRoutes.POST("/loginPakar", controllers.LoginPakar)
 	AuthRoutes.POST("/loginAdmin", controllers.LoginAdministrator)
 	AuthRoutes.POST("/loginTeacher", controllers.LoginTeachers)
+	AuthRoutes.POST("/logoutAdmin", controllers.Logout)
 
 	//Profile
 	ProfileRoutes := router.Group("/api")
@@ -72,6 +81,7 @@ func main() {
 	ProfileRoutes.GET("/profileStudents", controllers.GetProfileStudents)
 	ProfileRoutes.GET("/profileTeachers", controllers.GetProfileTeachers)
 	ProfileRoutes.GET("/profilePakars", controllers.GetProfilePakar)
+	ProfileRoutes.GET("/profileAdministrator", controllers.GetProfileAdministrator)
 
 	//Article Pakar Routes
 	ArticleRoutes := router.Group("/api/article/pakar")
@@ -102,7 +112,7 @@ func main() {
 	SchoolRoutes.POST("/createSchool", controllers.CreateSchool)
 	SchoolRoutes.GET("/getSchool", controllers.GetSekolah)
 	SchoolRoutes.GET("/getSchoolById/:uid", controllers.GetSekolahByUID)
-	SchoolRoutes.PUT("/updateSchool", controllers.UpdateSekolah)
+	SchoolRoutes.PUT("/updateSchool/:uid", controllers.UpdateSekolah)
 	SchoolRoutes.DELETE("/deleteSchool/:uid", controllers.DeleteSekolah)
 	//Manajemen Artikel Administrator
 	ArticleAdminRoutes := router.Group("/api/article/admin")
@@ -133,6 +143,10 @@ func main() {
 	UsersAdminRoutes.GET("/getTeacherById/:uid", controllers.GetTeachersByUID)
 	UsersAdminRoutes.PUT("/updateTeacher/:uid", controllers.UpdateTeachers)
 	UsersAdminRoutes.DELETE("/deleteTeacher/:uid", controllers.DeleteTeachers)
+	//Manajemen Catgeory
+
+	CategoriesRoute := router.Group("/categories")
+	CategoriesRoute.GET("/getAllCategories", controllers.GetAllCategories)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

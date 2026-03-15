@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/html"
+	"gorm.io/gorm"
 )
 
 type Pakar struct {
@@ -30,7 +31,7 @@ func (u *Pakar) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 }
 
-func (p *Pakar) BeforeSave() error {
+func (p *Pakar) BeforeSave(*gorm.DB) error {
 	uid, err := uuid.NewRandom()
 	p.PakarUID = uid.String()
 	if err != nil {
@@ -46,7 +47,7 @@ func (p *Pakar) BeforeSave() error {
 	return nil
 }
 
-func (p *Pakar) BeforeUpdate() error {
+func (p *Pakar) BeforeUpdate(*gorm.DB) error {
 
 	p.NomorSIP = html.EscapeString(strings.TrimSpace(p.NomorSIP))
 	p.NamaLengkap = html.EscapeString(strings.TrimSpace(p.NamaLengkap))

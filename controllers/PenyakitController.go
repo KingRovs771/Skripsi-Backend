@@ -151,7 +151,7 @@ func UpdatePenyakit(c *gin.Context) {
 
 func DeletePenyakit(c *gin.Context) {
 	uid := c.Param("uid")
-	penyakit, err := models.GetPenyakitByUID(uid)
+	err := models.DeletePenyakit(uid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Status":  "Error",
@@ -163,7 +163,7 @@ func DeletePenyakit(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{
 		"Status":  "Not Found",
 		"Message": "Data Penyakit Berhasil DiHapus",
-		"Data":    penyakit,
+		"Data":    err,
 	})
 
 }

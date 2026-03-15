@@ -15,7 +15,7 @@ type CategoryPenyakit struct {
 	CategoryPenyakitUID string    `gorm:"type:varchar(255)" json:"category_penyakit_uid"`
 	KodeCategory        string    `gorm:"type:varchar(40)" json:"kode_category"`
 	NamaCategory        string    `gorm:"type:varchar(20)" json:"nama_category"`
-	Deskripsi           string    `gorm:"type:text" json:"deskripsi"`
+	Deskripsi           string    `gorm:"type:text" json	:"deskripsi"`
 	CreatedAt           time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt            time.Time `gorm:"type:timestamp" json:"update_at"`
 }

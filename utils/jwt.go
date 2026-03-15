@@ -1,14 +1,16 @@
 package utils
 
 import (
+	"Skripsi-Backend/database"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type CustomClaims struct {
@@ -32,21 +34,12 @@ func BlacklistToken(token string, expiry time.Time) error {
 	return nil
 }
 
-func IsTokenBlacklisted(token string) bool {
-	mu.Lock()
-	defer mu.Unlock()
-
-	exp, exists := BlacklistedTokens[token]
-	if !exists {
+func IsTokenBlacklisted(tokenString string) bool {
+	exists, err := database.RDB.Exists(database.Ctx, tokenString).Result()
+	if err != nil {
 		return false
 	}
-
-	if time.Now().After(exp) {
-		delete(BlacklistedTokens, token)
-		return false
-	}
-
-	return true
+	return exists > 0
 }
 
 func cleanupExpiredTokens() {
@@ -87,8 +80,9 @@ func GenerateJWT(id, email, userType string) (string, error) {
 
 func GetTokenFromRequest(c *gin.Context) string {
 	bearerToken := c.Request.Header.Get("Authorization")
-	splitToken := strings.Split(bearerToken, " ")
-	if len(splitToken) == 2 && strings.ToLower(splitToken[0]) == "bearer" {
+	splitToken := strings.Fields(bearerToken)
+
+	if len(splitToken) == 2 && strings.EqualFold(splitToken[0], "bearer") {
 		return splitToken[1]
 	}
 	return ""
@@ -108,6 +102,9 @@ func ValidateJWT(c *gin.Context) (*CustomClaims, error) {
 		return nil, errors.New("token telah logout dan tidak valid")
 	}
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if token == nil {
+			return nil, errors.New("token nil")
+		}
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("metode signing tidak terduga")
 		}

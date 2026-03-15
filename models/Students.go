@@ -13,20 +13,19 @@ import (
 )
 
 type Students struct {
-	StudentsId        int64     `gorm:"primaryKey;uniqueIndex" json:"students_id"`
-	StudentsUID       string    `gorm:"type:varchar(90)" json:"students_uid"`
-	RoleUID           string    `gorm:"type:varchar(90)" json:"role_uid"`
-	NISN              string    `gorm:"type:varchar(20)" json:"nisn"`
-	NamaLengkap       string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
-	NPSN              string    `gorm:"type:int" json:"npsn"`
-	JenjangPendidikan string    `gorm:"type:varchar" json:"jenjang_pendidikan"`
-	Kelas             int64     `gorm:"type:int" json:"kelas"`
-	NoHp              string    `gorm:"type:varchar(20)" json:"no_hp"`
-	Alamat            string    `gorm:"type:text" json:"alamat"`
-	Email             string    `gorm:"type:varchar(100)" json:"email"`
-	Password          string    `gorm:"type:varchar(255)" json:"password"`
-	CreatedAt         time.Time `gorm:"type:timestamp" json:"created_at"`
-	UpdateAt          time.Time `gorm:"type:timestamp" json:"update_at"`
+	StudentsId  int64     `gorm:"primaryKey;uniqueIndex" json:"students_id"`
+	StudentsUID string    `gorm:"type:varchar(90)" json:"students_uid"`
+	RoleUID     string    `gorm:"type:varchar(90)" json:"role_uid"`
+	NISN        string    `gorm:"type:varchar(20)" json:"nisn"`
+	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
+	NPSN        string    `gorm:"type:varchar" json:"npsn"`
+	Kelas       int64     `gorm:"type:int" json:"kelas"`
+	NoHp        string    `gorm:"type:varchar(20)" json:"no_hp"`
+	Alamat      string    `gorm:"type:text" json:"alamat"`
+	Email       string    `gorm:"type:varchar(100)" json:"email"`
+	Password    string    `gorm:"type:varchar(255)" json:"password"`
+	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
 }
 
 func hashPassword(password string) (string, error) {
@@ -63,7 +62,7 @@ func (u *Students) BeforeSave(*gorm.DB) error {
 	return nil
 }
 
-func (u *Students) BeforeUpdate() error {
+func (u *Students) BeforeUpdate(*gorm.DB) error {
 
 	u.NISN = html.EscapeString(strings.TrimSpace(u.NISN))
 	u.NamaLengkap = html.EscapeString(strings.TrimSpace(u.NamaLengkap))

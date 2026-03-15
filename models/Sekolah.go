@@ -2,6 +2,7 @@ package models
 
 import (
 	"Skripsi-Backend/database"
+	"errors"
 	"strings"
 	"time"
 
@@ -42,20 +43,17 @@ func (s *Sekolah) BeforeUpdate(tx *gorm.DB) error {
 	return nil
 }
 
-func GetAllSekolah() ([]Sekolah, error) {
-	var SekolahList []Sekolah
-	err := database.DB.Find(&SekolahList).Error
-	if err != nil {
-		return SekolahList, err
-	}
-	return SekolahList, nil
-}
-
 func (s *Sekolah) SaveSekolah() (*Sekolah, error) {
-	var Sekolah Sekolah
-	err := database.DB.Create(&Sekolah).Error
+	var count int64
+	database.DB.Model(&Sekolah{}).Where("npsn = ?", s.NPSN).Count(&count)
+
+	if count > 0 {
+		return nil, errors.New("NPSN tersebut sudah terdaftar di sistem")
+	}
+	
+	err := database.DB.Create(&s).Error
 	if err != nil {
-		return &Sekolah, err
+		return nil, err
 	}
 	return s, nil
 }
