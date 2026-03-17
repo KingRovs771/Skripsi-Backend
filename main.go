@@ -62,10 +62,11 @@ func main() {
 
 	//Index Web
 	HomeRoutes := router.Group("/api/home")
-	HomeRoutes.GET("/articles", controllers.GetHomeArticles)
+	HomeRoutes.GET("/articles", controllers.GetAllArticlesHome)
 	HomeRoutes.GET("/articles/:uid", controllers.GetHomeArticleByUID)
 	HomeRoutes.GET("/allArticles", controllers.GetAllAriclesHome)
-
+	HomeRoutes.GET("/thumbnail", controllers.GetThumbnailArticle)
+	HomeRoutes.GET("/articles/:uid/thumbnail", controllers.GetArticleThumbnail)
 	//Login Routes
 	AuthRoutes := router.Group("/auth")
 	AuthRoutes.POST("/registerStudents", controllers.RegisterStudents)
@@ -120,7 +121,7 @@ func main() {
 	ArticleAdminRoutes.GET("/getArticles", controllers.GetAllArticles)
 	ArticleAdminRoutes.POST("/createArticles", controllers.CreateArticle)
 	ArticleAdminRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
-	ArticleAdminRoutes.PUT("/updateArticle", controllers.UpdateArticle)
+	ArticleAdminRoutes.PUT("/updateArticle/:uid", controllers.UpdateArticle)
 	ArticleAdminRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 	//Manajemen Users
 	UsersAdminRoutes := router.Group("/api/users")

@@ -265,10 +265,10 @@ func GetArticleThumbnail(c *gin.Context) {
 
 	c.Data(http.StatusOK, "image/jpeg", article.Thumbnails)
 }
-func GetHomeArticles(c *gin.Context) {
+func GetAllArticlesHome(c *gin.Context) {
 	var articles []models.Article
-	if err := database.DB.Order("created_at desc").Limit(5).Find(&articles).Error; err != nil {
 
+	if err := database.DB.Order("created_at desc").Limit(15).Find(&articles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
 			"Message": "Gagal mengambil artikel",
@@ -288,22 +288,27 @@ func GetHomeArticles(c *gin.Context) {
 
 	var response []HomeArticleResponse
 	for _, article := range articles {
-		summary := article.IsiArticle
+		summary := stripHtmlTags(article.IsiArticle)
 		if len(summary) > 150 {
 			summary = summary[:150] + "..."
 		}
 
 		thumbnailURL := ""
 		if len(article.Thumbnails) > 0 {
-			baseURL := "rhttps://" + c.Request.Host
-			thumbnailURL = fmt.Sprintf("%s/api/articles/%s/thumbnail", baseURL, article.ArticleUID)
+			scheme := "http"
+			if c.Request.TLS != nil {
+				scheme = "https"
+			}
+
+			baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
+			thumbnailURL = fmt.Sprintf("%s/api/home/thumbnail/%s", baseURL, article.ArticleUID)
 		}
 
 		response = append(response, HomeArticleResponse{
 			Slug:      article.ArticleUID,
 			Title:     article.JudulArticle,
 			Summary:   summary,
-			Date:      article.CreatedAt.Format("2 January 2006"),
+			Date:      article.CreatedAt.Format("02 January 2006"), // Gunakan "02" agar tanggal 1-9 ada nol di depan
 			Author:    article.Author,
 			Thumbnail: thumbnailURL,
 		})
@@ -314,6 +319,25 @@ func GetHomeArticles(c *gin.Context) {
 		"Message": "Berhasil Mendapatkan Data Artikel",
 		"Data":    response,
 	})
+}
+
+func stripHtmlTags(content string) string {
+	return content
+}
+
+func GetThumbnailArticle(c *gin.Context) {
+	uid := c.Param("uid")
+	var article models.Article
+
+	if err := database.DB.Select("thumbnails").Where("article_uid = ?", uid).First(&article).Error; err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	// Deteksi tipe konten (apakah png, jpg, dsb)
+	contentType := http.DetectContentType(article.Thumbnails)
+
+	c.Data(http.StatusOK, contentType, article.Thumbnails)
 }
 
 func GetAllAriclesHome(c *gin.Context) {
@@ -347,7 +371,7 @@ func GetAllAriclesHome(c *gin.Context) {
 		thumbnailURL := ""
 		if len(article.Thumbnails) > 0 {
 			baseURL := "rhttps://" + c.Request.Host
-			thumbnailURL = fmt.Sprintf("%s/api/articles/%s/thumbnail", baseURL, article.ArticleUID)
+			thumbnailURL = fmt.Sprintf("%s/api/home/articles/%s/thumbnail", baseURL, article.ArticleUID)
 		}
 
 		response = append(response, HomeArticleResponse{
