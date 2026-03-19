@@ -115,6 +115,7 @@ func main() {
 	SchoolRoutes.GET("/getSchoolById/:uid", controllers.GetSekolahByUID)
 	SchoolRoutes.PUT("/updateSchool/:uid", controllers.UpdateSekolah)
 	SchoolRoutes.DELETE("/deleteSchool/:uid", controllers.DeleteSekolah)
+	SchoolRoutes.GET("/searchSchool/search", controllers.SearchSekolah)
 	//Manajemen Artikel Administrator
 	ArticleAdminRoutes := router.Group("/api/article/admin")
 	ArticleAdminRoutes.Use(middleware.RequireAuth())

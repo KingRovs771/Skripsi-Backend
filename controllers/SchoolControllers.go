@@ -151,3 +151,41 @@ func DeleteSekolah(c *gin.Context) {
 		"message": "Data sekolah berhasil dihapus",
 	})
 }
+
+func SearchSekolah(c *gin.Context) {
+	query := c.Query("q")
+
+	if query == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"Status":  "OK",
+			"Message": "Query kosong",
+			"Data":    []models.Sekolah{},
+		})
+		return
+	}
+
+	sekolahs, err := models.SearchSekolah(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Gagal mencari data sekolah",
+			"Error":   err.Error(),
+		})
+		return
+	}
+
+	if len(sekolahs) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"Status":  "Not Found",
+			"Message": "Sekolah tidak ditemukan",
+			"Data":    []models.Sekolah{},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Data sekolah ditemukan",
+		"Data":    sekolahs,
+	})
+}

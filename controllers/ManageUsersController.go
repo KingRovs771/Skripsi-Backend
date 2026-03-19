@@ -179,7 +179,7 @@ func CreateStudents(c *gin.Context) {
 		NamaLengkap       string `json:"nama_lengkap" binding:"required"`
 		NPSN              string `json:"npsn" binding:"required"`
 		JenjangPendidikan string `json:"jenjang_pendidikan" binding:"required"`
-		Kelas             int64  `json:"kelas" binding:"required"`
+		Kelas             string `json:"kelas" binding:"required"`
 		Email             string `json:"email" binding:"required"`
 		Password          string `json:"password" binding:"required"`
 		NoHp              string `json:"no_hp" binding:"required"`
@@ -282,7 +282,7 @@ func UpdateStudents(c *gin.Context) {
 		NISN              *string `json:"nisn,omitempty" binding:"omitempty,max=20"`
 		NamaLengkap       *string `json:"nama_lengkap,omitempty" binding:"omitempty,max=90"`
 		JenjangPendidikan *string `json:"jenjang_pendidikan,omitempty"`
-		Kelas             *int64  `json:"kelas,omitempty"`
+		Kelas             *string `json:"kelas,omitempty"`
 		NoHp              *string `json:"no_hp,omitempty" binding:"omitempty,max=20"`
 		Alamat            *string `json:"alamat,omitempty"`
 		Email             *string `json:"email,omitempty" binding:"omitempty,email"`

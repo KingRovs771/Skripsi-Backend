@@ -13,15 +13,16 @@ import (
 
 func RegisterStudents(c *gin.Context) {
 	var registerUser struct {
+		RoleUID           string `json:"role_uid"`
 		NISN              string `json:"nisn"`
 		NamaLengkap       string `json:"nama_lengkap"`
 		NoHp              string `json:"no_hp"`
 		Alamat            string `json:"alamat"`
 		NPSN              string `json:"npsn"`
 		JenjangPendidikan string `json:"jenjang_pendidikan"`
-		Kelas             int64  `json:"kelas"`
-		Email             string `json:"email" binding:"required, email"`
-		Password          string `json:"password" binding:"required, min=8"`
+		Kelas             string `json:"kelas"`
+		Email             string `json:"email" validate:"required,email"`
+		Password          string `json:"password" validate:"required, min=8"`
 	}
 
 	if err := c.BindJSON(&registerUser); err != nil {
@@ -34,6 +35,7 @@ func RegisterStudents(c *gin.Context) {
 	}
 
 	registerStudents := models.Students{
+		RoleUID:     registerUser.RoleUID,
 		NISN:        registerUser.NISN,
 		NamaLengkap: registerUser.NamaLengkap,
 		NoHp:        registerUser.NoHp,

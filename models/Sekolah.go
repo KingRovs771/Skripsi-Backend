@@ -50,7 +50,7 @@ func (s *Sekolah) SaveSekolah() (*Sekolah, error) {
 	if count > 0 {
 		return nil, errors.New("NPSN tersebut sudah terdaftar di sistem")
 	}
-	
+
 	err := database.DB.Create(&s).Error
 	if err != nil {
 		return nil, err
@@ -75,4 +75,17 @@ func (s *Sekolah) UpdateSekolah(uid string) error {
 func DeleteSekolah(uid string) error {
 	err := database.DB.Where("sekolah_uid = ?", uid).Delete(&Sekolah{}).Error
 	return err
+}
+
+func SearchSekolah(query string) ([]Sekolah, error) {
+	var sekolahs []Sekolah
+
+	searchQuery := "%" + query + "%"
+
+	err := database.DB.Where("nama_sekolah ILIKE ? OR CAST(npsn AS TEXT) LIKE ?", searchQuery, searchQuery).
+		Limit(10).
+		Find(&sekolahs).Error
+
+	return sekolahs, err
+
 }

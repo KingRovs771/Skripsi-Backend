@@ -14,13 +14,13 @@ import (
 
 type Students struct {
 	StudentsId  int64     `gorm:"primaryKey;uniqueIndex" json:"students_id"`
-	StudentsUID string    `gorm:"type:varchar(90)" json:"students_uid"`
-	RoleUID     string    `gorm:"type:varchar(90)" json:"role_uid"`
+	StudentsUID string    `gorm:"type:varchar(255)" json:"students_uid"`
+	RoleUID     string    `gorm:"type:varchar(255)" json:"role_uid"`
 	NISN        string    `gorm:"type:varchar(20)" json:"nisn"`
 	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
-	NPSN        string    `gorm:"type:varchar" json:"npsn"`
-	Kelas       int64     `gorm:"type:int" json:"kelas"`
-	NoHp        string    `gorm:"type:varchar(20)" json:"no_hp"`
+	NPSN        string    `gorm:"type:varchar(30)" json:"npsn"`
+	Kelas       string    `gorm:"type:varchar(50)" json:"kelas"`
+	NoHp        string    `gorm:"type:varchar(50)" json:"no_hp"`
 	Alamat      string    `gorm:"type:text" json:"alamat"`
 	Email       string    `gorm:"type:varchar(100)" json:"email"`
 	Password    string    `gorm:"type:varchar(255)" json:"password"`
