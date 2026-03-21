@@ -14,8 +14,8 @@ import (
 type Pakar struct {
 	PakarID        int64     `gorm:"primaryKey;uniqueIndex" json:"pakar_id"`
 	PakarUID       string    `gorm:"type:varchar(255)" json:"pakar_uid"`
-	RoleUID        int64     `gorm:"type:int" json:"role_uid"`
-	NomorSIP       string    `gorm:"type:varchar(20)" json:"nomor_sip"`
+	RoleUID        string    `gorm:"type:varchar(255)" json:"role_uid"`
+	NomorSIP       string    `gorm:"type:varchar(90)" json:"nomor_sip"`
 	NamaLengkap    string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
 	JenisSpesialis string    `gorm:"type:varchar" json:"jenis_spesialis"`
 	Phone          string    `gorm:"type:varchar(20)" json:"phone"`

@@ -19,6 +19,7 @@ type Students struct {
 	NISN        string    `gorm:"type:varchar(20)" json:"nisn"`
 	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
 	NPSN        string    `gorm:"type:varchar(30)" json:"npsn"`
+	NamaSekolah string    `gorm:"->;column:nama_sekolah" json:"nama_sekolah"`
 	Kelas       string    `gorm:"type:varchar(50)" json:"kelas"`
 	NoHp        string    `gorm:"type:varchar(50)" json:"no_hp"`
 	Alamat      string    `gorm:"type:text" json:"alamat"`
@@ -84,7 +85,12 @@ func (u *Students) Save() (*Students, error) {
 
 func GetAllStudents() ([]Students, error) {
 	var students []Students
-	err := database.DB.Find(&students).Error
+
+	err := database.DB.Table("students").
+		Select("students.*, sekolahs.nama_sekolah").
+		Joins("left join sekolahs on sekolahs.npsn::text = students.npsn").
+		Scan(&students).Error
+
 	if err != nil {
 		return []Students{}, err
 	}

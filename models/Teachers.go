@@ -14,7 +14,7 @@ import (
 type Teachers struct {
 	TeachersID  int64     `gorm:"primaryKey;uniqueIndex" json:"teachers_id"`
 	TeachersUID string    `gorm:"type:varchar(255)" json:"teachers_uid"`
-	RoleUID     int64     `gorm:"type:int" json:"role_uid"`
+	RoleUID     string    `gorm:"type:varchar(255)" json:"role_uid"`
 	NIP         string    `gorm:"type:varchar(20)" json:"nip"`
 	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
 	NPSN        string    `gorm:"type:int" json:"npsn"`
@@ -78,7 +78,10 @@ func (t *Teachers) SaveTeachers() (*Teachers, error) {
 // GetAllTeachers mengambil semua data guru
 func GetAllTeachers() ([]Teachers, error) {
 	var teachersList []Teachers
-	err := database.DB.Find(&teachersList).Error
+	err := database.DB.Table("teachers").
+		Select("teachers.*, sekolahs.nama_sekolah").
+		Joins("left join sekolahs on sekolahs.npsn::text = teachers.npsn").
+		Scan(&teachersList).Error
 	if err != nil {
 		return nil, err
 	}

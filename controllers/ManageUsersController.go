@@ -13,11 +13,11 @@ import (
 // Pakar Users
 func CreatePakar(c *gin.Context) {
 	var input struct {
-		RoleUID        int64  `json:"role_uid" binding:"required"`
-		NomorSIP       string `json:"nomor_sip" binding:"required,max=20"`
-		NamaLengkap    string `json:"nama_lengkap" binding:"required,max=90"`
+		RoleUID        string `json:"role_uid" binding:"required"`
+		NomorSIP       string `json:"nomor_sip" validate:"required"`
+		NamaLengkap    string `json:"nama_lengkap" binding:"required"`
 		JenisSpesialis string `json:"jenis_spesialis" binding:"required"`
-		Phone          string `json:"phone" binding:"max=20"`
+		Phone          string `json:"phone" validate:"max=20"`
 		Email          string `json:"email" binding:"required,email"`
 		Alamat         string `json:"alamat"`
 		Password       string `json:"password" binding:"required,min=6"`
@@ -94,9 +94,9 @@ func UpdatePakar(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var input struct {
-		RoleUID        *int64  `json:"role_uid,omitempty"`
-		NomorSIP       *string `json:"nomor_sip,omitempty" binding:"omitempty,max=20"`
-		NamaLengkap    *string `json:"nama_lengkap,omitempty" binding:"omitempty,max=90"`
+		RoleUID        *string `json:"role_uid,omitempty"`
+		NomorSIP       *string `json:"nomor_sip,omitempty" binding:"omitempty"`
+		NamaLengkap    *string `json:"nama_lengkap,omitempty" binding:"omitempty"`
 		JenisSpesialis *string `json:"jenis_spesialis,omitempty"`
 		Phone          *string `json:"phone,omitempty" binding:"omitempty,max=20"`
 		Email          *string `json:"email,omitempty" binding:"omitempty,email"`
@@ -342,7 +342,7 @@ func UpdateStudents(c *gin.Context) {
 // Akun Guru
 func CreateTeachers(c *gin.Context) {
 	var input struct {
-		RoleUID     int64  `json:"role_uid" binding:"required"`
+		RoleUID     string `json:"role_uid" binding:"required"`
 		NIP         string `json:"nip" binding:"required,max=20"`
 		NamaLengkap string `json:"nama_lengkap" binding:"required,max=90"`
 		NPSN        string `json:"npsn" binding:"max=20"`
@@ -428,7 +428,7 @@ func UpdateTeachers(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var input struct {
-		RoleUID     *int64  `json:"role_uid,omitempty"`
+		RoleUID     *string `json:"role_uid,omitempty"`
 		NIP         *string `json:"nip,omitempty" binding:"omitempty,max=20"`
 		NamaLengkap *string `json:"nama_lengkap,omitempty" binding:"omitempty,max=90"`
 		NPSN        *string `json:"npsn,omitempty" binding:"omitempty,max=20"`
