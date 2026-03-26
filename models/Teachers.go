@@ -17,12 +17,13 @@ type Teachers struct {
 	RoleUID     string    `gorm:"type:varchar(255)" json:"role_uid"`
 	NIP         string    `gorm:"type:varchar(20)" json:"nip"`
 	NamaLengkap string    `gorm:"type:varchar(90)" json:"nama_lengkap"`
-	NPSN        string    `gorm:"type:int" json:"npsn"`
+	NPSN        string    `gorm:"type:varchar(30)" json:"npsn"`
+	NamaSekolah string    `gorm:"->;column:nama_sekolah" json:"nama_sekolah"`
 	Phone       string    `gorm:"type:varchar(20)" json:"phone"`
 	Alamat      string    `gorm:"type:text" json:"alamat"`
 	Email       string    `gorm:"type:varchar(90)" json:"email"`
 	Password    string    `gorm:"type:varchar(90)" json:"password"`
-	PhotoFile   []byte    `gorm:"type:bytea;not null" json:"face_data"`
+	PhotoFile   []byte    `gorm:"type:bytea" json:"face_data"`
 	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
 }
@@ -79,7 +80,7 @@ func (t *Teachers) SaveTeachers() (*Teachers, error) {
 func GetAllTeachers() ([]Teachers, error) {
 	var teachersList []Teachers
 	err := database.DB.Table("teachers").
-		Select("teachers.*, sekolahs.nama_sekolah").
+		Select("teachers.teachers_uid, teachers.n_ip, teachers.nama_lengkap, teachers.npsn,teachers.email, teachers.phone, sekolahs.nama_sekolah").
 		Joins("left join sekolahs on sekolahs.npsn::text = teachers.npsn").
 		Scan(&teachersList).Error
 	if err != nil {

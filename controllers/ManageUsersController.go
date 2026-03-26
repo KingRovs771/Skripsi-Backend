@@ -4,6 +4,7 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,6 +54,7 @@ func CreatePakar(c *gin.Context) {
 		"data":    result,
 	})
 }
+
 func GetAllPakar(c *gin.Context) {
 	pakarList, err := models.GetAllPakar()
 	if err != nil {
@@ -60,17 +62,42 @@ func GetAllPakar(c *gin.Context) {
 		return
 	}
 
-	// Hilangkan PhotoFile dari response JSON
-	for i := range pakarList {
-		pakarList[i].PhotoFile = nil
-	}
+	baseURL := "http://" + c.Request.Host
 
+	for i := range pakarList {
+		if len(pakarList[i].PhotoFile) > 0 {
+			pakarList[i].PhotoURL = fmt.Sprintf("%s/api/photo/getPhotoPakar/%s", baseURL, pakarList[i].PakarUID)
+		} else {
+			pakarList[i].PhotoURL = ""
+		}
+
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Data pakar berhasil diambil",
 		"data":    pakarList,
 	})
 }
+
+func GetPakarPhoto(c *gin.Context) {
+	uid := c.Param("uid")
+	var pakar models.Pakar
+
+	if err := database.DB.Select("photo_file").Where("pakar_uid = ?", uid).First(&pakar).Error; err != nil {
+		c.Data(http.StatusNotFound, "text/plain", []byte("Foto tidak ditemukan"))
+		return
+	}
+
+	if len(pakar.PhotoFile) == 0 {
+		c.Data(http.StatusNotFound, "text/plain", []byte("Data foto kosong"))
+		return
+	}
+
+	contentType := http.DetectContentType(pakar.PhotoFile)
+
+	c.Data(http.StatusOK, contentType, pakar.PhotoFile)
+}
+
 func GetPakarByUID(c *gin.Context) {
 	uid := c.Param("uid")
 

@@ -104,7 +104,7 @@ func UpdatePertanyaan(c *gin.Context) {
 
 	var quest models.Pertanyaan
 
-	if err := database.DB.Where("id = ?", uid).First(&quest).Error; err != nil {
+	if err := database.DB.Where("pertanyaan_uid = ?", uid).First(&quest).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Status":  "Bad Request",
 			"Message": "Bad Request Server",

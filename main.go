@@ -60,6 +60,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	router.GET("/api/photo/getPhotoPakar/:uid", controllers.GetPakarPhoto)
 	//Index Web
 	HomeRoutes := router.Group("/api/home")
 	HomeRoutes.GET("/articles", controllers.GetAllArticlesHome)

@@ -22,5 +22,7 @@ func (category *Category) BeforeCreate(tx *gorm.DB) (err error) {
 		return err
 	}
 	category.CategoryUID = newUUID.String()
+	category.CreatedAt = time.Now()
+	category.UpdateAt = time.Now()
 	return
 }

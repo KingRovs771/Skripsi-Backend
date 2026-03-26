@@ -27,8 +27,24 @@ type Pakar struct {
 	UpdateAt       time.Time `gorm:"type:timestamp" json:"update_at"`
 }
 
+type PakarTableResponse struct {
+	PakarUID       string `json:"pakar_uid"`
+	NamaLengkap    string `json:"nama_lengkap"`
+	Email          string `json:"email"`
+	NomorSIP       string `json:"nomor_sip"`
+	Phone          string `json:"phone"`
+	JenisSpesialis string `json:"jenis_spesialis"`
+	PhotoFile      []byte `json:"gambar"`
+	PhotoURL       string `json:"photo_url"`
+}
+
 func (u *Pakar) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+}
+
+func hashPasswordPakar(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	return string(bytes), err
 }
 
 func (p *Pakar) BeforeSave(*gorm.DB) error {
@@ -37,6 +53,13 @@ func (p *Pakar) BeforeSave(*gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	//Hash Password
+	hashedPassword, err := hashPassword(p.Password)
+	if err != nil {
+		return err
+	}
+
+	p.Password = hashedPassword
 	p.NomorSIP = html.EscapeString(strings.TrimSpace(p.NomorSIP))
 	p.NamaLengkap = html.EscapeString(strings.TrimSpace(p.NamaLengkap))
 	p.JenisSpesialis = html.EscapeString(strings.TrimSpace(p.JenisSpesialis))
@@ -68,12 +91,15 @@ func (p *Pakar) SaveUsersPakar() (*Pakar, error) {
 	return p, nil
 }
 
-func GetAllPakar() ([]Pakar, error) {
-	var PakarList []Pakar
+func GetAllPakar() ([]PakarTableResponse, error) {
 
-	err := database.DB.Find(&PakarList).Error
+	var PakarList []PakarTableResponse
+
+	err := database.DB.Table("pakars").
+		Select("pakar_uid, nomor_s_ip, nama_lengkap, jenis_spesialis, phone, email, photo_file").
+		Scan(&PakarList).Error
 	if err != nil {
-		return []Pakar{}, err
+		return []PakarTableResponse{}, err
 	}
 	return PakarList, nil
 }
