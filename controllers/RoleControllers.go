@@ -3,15 +3,16 @@ package controllers
 import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func CreateRole(c *gin.Context) {
 	var inputRole struct {
-		RoleName    string `json:"role_name" binding:"required, max=40"`
+		RoleName    string `json:"role_name" binding:"required"`
 		Description string `json:"description"`
 	}
 
@@ -71,7 +72,7 @@ func GetRoles(c *gin.Context) {
 func GetRoleById(c *gin.Context) {
 	uidRole := c.Param("uid")
 	var role models.Role
-	if err := database.DB.Where("id = ?", uidRole).First(&role).Error; err != nil {
+	if err := database.DB.Where("role_uid = ?", uidRole).First(&role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"Status":  "Error",
@@ -98,7 +99,7 @@ func UpdateRole(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var inputRole struct {
-		RoleName    *string `json:"role_name" binding:"required, max=40"`
+		RoleName    *string `json:"role_name" binding:"required"`
 		Description *string `json:"description"`
 	}
 	if err := c.ShouldBindJSON(&inputRole); err != nil {
@@ -110,7 +111,7 @@ func UpdateRole(c *gin.Context) {
 		return
 	}
 	var role models.Role
-	if err := database.DB.Where("id = ?", uid).First(&role).Error; err != nil {
+	if err := database.DB.Where("role_uid = ?", uid).First(&role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"Status":  "Error",
@@ -153,7 +154,7 @@ func UpdateRole(c *gin.Context) {
 func DeleteRole(c *gin.Context) {
 	uid := c.Param("uid")
 	var role models.Role
-	if err := database.DB.Where("id = ?", uid).First(&role).Error; err != nil {
+	if err := database.DB.Where("role_uid = ?", uid).First(&role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"Status":  "Error",

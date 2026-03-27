@@ -19,6 +19,52 @@ type UpdateAdminInput struct {
 	Password    string `json:"password"`
 	RoleUID     string `json:"role_id"`
 }
+type DashboardSummary struct {
+	// Health Status
+	StatusSystem struct {
+		ApiServer string `json:"api_server"`
+		Database  string `json:"database"`
+	} `json:"status_system"`
+
+	// Main Stats
+	Stats struct {
+		TotalSiswa     int64 `json:"total_siswa"`
+		TesSelesai     int64 `json:"tes_selesai"`
+		ButuhPerhatian int64 `json:"butuh_perhatian"`
+	} `json:"stats"`
+
+	// Chart Data
+	Grafik []struct {
+		Kategori string `json:"kategori"`
+		Jumlah   int64  `json:"jumlah"`
+	} `json:"grafik"`
+}
+
+func GetFullDashboardData(c *gin.Context) {
+	var data DashboardSummary
+
+	sqlDB, err := database.DB.DB()
+	data.StatusSystem.ApiServer = "ONLINE"
+	if err != nil || sqlDB.Ping() != nil {
+		data.StatusSystem.Database = "DISCONNECTED"
+	} else {
+		data.StatusSystem.Database = "CONNECTED"
+	}
+
+	database.DB.Model(&models.Students{}).Count(&data.Stats.TotalSiswa)
+	database.DB.Table("hasil_diagnoses").Count(&data.Stats.TesSelesai)
+	database.DB.Table("hasil_diagnoses").Where("nn_confidence_score > ?", 75).Count(&data.Stats.ButuhPerhatian)
+
+	database.DB.Table("hasil_diagnoses").
+		Select("final_penyakit, count(*) as jumlah").
+		Group("final_penyakit").
+		Scan(&data.Grafik)
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status": "Success",
+		"Data":   data,
+	})
+}
 
 func GetAllAdministrator(c *gin.Context) {
 	var admins []models.Administrator

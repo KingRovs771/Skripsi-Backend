@@ -13,7 +13,7 @@ type Role struct {
 	RoleName    string    `gorm:"type:varchar(40)" json:"role_name"`
 	Description string    `gorm:"type:text" json:"description"`
 	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
-	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
+	UpdatedAt   time.Time `gorm:"type:timestamp" json:"updated_at"`
 }
 
 func (r *Role) BeforeSave(tx *gorm.DB) (err error) {

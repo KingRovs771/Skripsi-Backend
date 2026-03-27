@@ -97,6 +97,7 @@ func main() {
 	// Administrator Fitur
 	// Manajemen Pengguna
 	AdminRoutes := router.Group("/api/admin")
+	AdminRoutes.GET("/healthcheck", controllers.GetFullDashboardData)
 	AdminRoutes.GET("/getAdmin", controllers.GetAllAdministrator)
 	AdminRoutes.POST("/createAdmin", controllers.CreateAdministrator)
 	AdminRoutes.GET("/getAdmin/:uid", controllers.GetAdministratorByUID)
@@ -107,7 +108,7 @@ func main() {
 	RoleRoutes.POST("/createRole", controllers.CreateRole)
 	RoleRoutes.GET("/getRole", controllers.GetRoles)
 	RoleRoutes.GET("/getRoleById/:uid", controllers.GetRoleById)
-	RoleRoutes.PUT("/updateRole", controllers.UpdateRole)
+	RoleRoutes.PUT("/updateRole/:uid", controllers.UpdateRole)
 	RoleRoutes.DELETE("/deleteRole/:uid", controllers.DeleteRole)
 	//Manajemen Sekolah
 	SchoolRoutes := router.Group("/school")
@@ -147,7 +148,6 @@ func main() {
 	UsersAdminRoutes.PUT("/updateTeacher/:uid", controllers.UpdateTeachers)
 	UsersAdminRoutes.DELETE("/deleteTeacher/:uid", controllers.DeleteTeachers)
 	//Manajemen Catgeory
-
 	CategoriesRoute := router.Group("/categories")
 	CategoriesRoute.GET("/getAllCategories", controllers.GetAllCategories)
 

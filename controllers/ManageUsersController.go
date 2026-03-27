@@ -310,7 +310,7 @@ func UpdateStudents(c *gin.Context) {
 		NamaLengkap       *string `json:"nama_lengkap,omitempty" binding:"omitempty,max=90"`
 		JenjangPendidikan *string `json:"jenjang_pendidikan,omitempty"`
 		Kelas             *string `json:"kelas,omitempty"`
-		NoHp              *string `json:"no_hp,omitempty" binding:"omitempty,max=20"`
+		NoHp              *string `json:"no_hp" binding:"required"`
 		Alamat            *string `json:"alamat,omitempty"`
 		Email             *string `json:"email,omitempty" binding:"omitempty,email"`
 	}
