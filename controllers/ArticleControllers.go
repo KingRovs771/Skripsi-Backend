@@ -3,6 +3,7 @@ package controllers
 import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
+	"Skripsi-Backend/utils"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -457,5 +458,105 @@ func DeleteArticle(c *gin.Context) {
 		"Message": "Berhasil Menghapus Data Artikel",
 		"Data":    resultArtikel,
 	})
+}
+func GetArticlesByAuthor(c *gin.Context) {
+	// Ambil data User dari token JWT
+	claims, err := utils.ValidateJWT(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"Status":  "Error",
+			"Message": "Sesi login tidak valid atau sudah kedaluwarsa",
+		})
+		return
+	}
 
+	var authorName string
+	// Cari nama berdasarkan Tipe User
+	if claims.UserType == "Pakar" {
+		var pakar models.Pakar
+		database.DB.Where("pakar_uid = ?", claims.ID).First(&pakar)
+		authorName = pakar.NamaLengkap
+	} else if claims.UserType == "Administrator" || claims.UserType == "admin" || claims.UserType == "administrator" {
+		var admin models.Administrator
+		database.DB.Where("admin_uid = ?", claims.ID).First(&admin)
+		authorName = admin.NamaLengkap
+	}
+
+	if authorName == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"Status":  "Error",
+			"Message": "Sesi login tidak valid atau author tidak ditemukan",
+		})
+		return
+	}
+
+	var articles []models.Article
+
+	// 2. Query filter berdasarkan author (Gunakan Nama Lengkap dari JWT)
+	if err := database.DB.Where("author = ?", authorName).Order("created_at desc").Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Status":  "Error",
+			"Message": "Gagal mengambil data artikel",
+			"Error":   err.Error(),
+		})
+		return
+	}
+
+	// Jika data kosong
+	if len(articles) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"Status":  "Success",
+			"Message": "Anda belum menulis artikel apapun",
+			"data":    []interface{}{},
+		})
+		return
+	}
+
+	// 3. Ambil Nama Kategori (Logika Map)
+	categoryUIDs := make([]string, len(articles))
+	for i, article := range articles {
+		categoryUIDs[i] = article.CategoryUID
+	}
+
+	var categories []models.Category
+	database.DB.Where("category_uid IN ?", categoryUIDs).Find(&categories)
+
+	categoryMap := make(map[string]string)
+	for _, category := range categories {
+		categoryMap[category.CategoryUID] = category.NameCategory
+	}
+
+	// 4. Mapping Data ke Map (Tanpa Merubah Model)
+	var finalResponse []map[string]interface{}
+	baseURL := "http://" + c.Request.Host
+
+	for _, article := range articles {
+		statusLabel := "Draft"
+		if article.Status == 1 {
+			statusLabel = "Publish"
+		}
+
+		thumbnailURL := ""
+		if len(article.Thumbnails) > 0 {
+			thumbnailURL = fmt.Sprintf("%s/api/article/thumbnail/%s", baseURL, article.ArticleUID)
+		}
+
+		item := map[string]interface{}{
+			"article_uid":   article.ArticleUID,
+			"judul_article": article.JudulArticle,
+			"category_name": categoryMap[article.CategoryUID],
+			"author":        article.Author,
+			"status_label":  statusLabel,
+			"thumbnail_url": thumbnailURL,
+			"created_at":    article.CreatedAt.Format("02 January 2006"),
+		}
+
+		finalResponse = append(finalResponse, item)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "Success",
+		"Message": "Berhasil mendapatkan daftar artikel Anda",
+		"data":    finalResponse,
+	})
 }

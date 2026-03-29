@@ -151,6 +151,11 @@ func main() {
 	CategoriesRoute := router.Group("/categories")
 	CategoriesRoute.GET("/getAllCategories", controllers.GetAllCategories)
 
+	//Manajemen Artikel Pakar
+	ArtikelPakarRoutes := router.Group("/api/artikelpakar")
+	ArtikelPakarRoutes.Use(middleware.RequireAuth())
+	ArtikelPakarRoutes.GET("/getAllArtikel", controllers.GetArticlesByAuthor)
+
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message":  "Welcome to Skripsi Backend!",

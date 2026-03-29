@@ -53,8 +53,7 @@ func (p *Pakar) BeforeSave(*gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	//Hash Password
-	hashedPassword, err := hashPassword(p.Password)
+	hashedPassword, err := hashPasswordPakar(p.Password)
 	if err != nil {
 		return err
 	}
