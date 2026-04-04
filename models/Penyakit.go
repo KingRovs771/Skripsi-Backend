@@ -22,11 +22,13 @@ type Penyakit struct {
 }
 
 func (p *Penyakit) BeforeSave(db *gorm.DB) error {
-	uid, err := uuid.NewRandom()
-	if err != nil {
-		return err
+	if p.PenyakitUID == "" {
+		uid, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
+		p.PenyakitUID = uid.String()
 	}
-	p.PenyakitUID = uid.String()
 
 	p.KodePenyakit = html.EscapeString(strings.TrimSpace(p.KodePenyakit))
 	p.NamaPenyakit = html.EscapeString(strings.TrimSpace(p.NamaPenyakit))
@@ -47,13 +49,12 @@ func (p *Penyakit) BeforeUpdate(db *gorm.DB) error {
 	return nil
 }
 
-func (p *Penyakit) SavePenyakit() (Penyakit, error) {
-	var penyakits Penyakit
-	err := database.DB.Create(&penyakits).Error
+func (p *Penyakit) SavePenyakit() (*Penyakit, error) {
+	err := database.DB.Create(p).Error
 	if err != nil {
-		return penyakits, err
+		return nil, err
 	}
-	return penyakits, err
+	return p, err
 }
 
 func GetAllPenyakit() ([]Penyakit, error) {
@@ -67,7 +68,7 @@ func GetAllPenyakit() ([]Penyakit, error) {
 
 func GetPenyakitByUID(uid string) (Penyakit, error) {
 	var penyakit Penyakit
-	err := database.DB.Where("pertanyaan_uid = ?", uid).First(&penyakit).Error
+	err := database.DB.Where("penyakit_uid = ?", uid).First(&penyakit).Error
 	if err != nil {
 		return Penyakit{}, err
 	}
@@ -80,6 +81,6 @@ func (p *Penyakit) UpdatePenyakit(uid string) error {
 }
 
 func DeletePenyakit(uid string) error {
-	err := database.DB.Where("pertanyaan_uid = ?", uid).Delete(&Penyakit{}).Error
+	err := database.DB.Where("penyakit_uid=?", uid).Delete(&Penyakit{}).Error
 	return err
 }

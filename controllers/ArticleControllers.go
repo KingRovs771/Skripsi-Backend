@@ -35,6 +35,7 @@ type ArticleDetailResponse struct {
 	IsiArticle   string          `json:"isi_article"`
 	Author       string          `json:"author"`
 	Category     models.Category `json:"category"`
+	Status       int             `json:"status"`
 }
 
 type ArticleInput struct {
@@ -43,6 +44,7 @@ type ArticleInput struct {
 	IsiArticle   string `json:"isi_article"`
 	Author       string `json:"author"`
 	CategoryUID  string `json:"category_uid"`
+	Status       int    `json:"status"`
 }
 
 func CreateArticle(c *gin.Context) {
@@ -234,6 +236,7 @@ func GetArticleByUID(c *gin.Context) {
 		IsiArticle:   article.IsiArticle,
 		Author:       article.Author,
 		Category:     category,
+		Status:       int(article.Status),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -460,7 +463,6 @@ func DeleteArticle(c *gin.Context) {
 	})
 }
 func GetArticlesByAuthor(c *gin.Context) {
-	// Ambil data User dari token JWT
 	claims, err := utils.ValidateJWT(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -538,7 +540,7 @@ func GetArticlesByAuthor(c *gin.Context) {
 
 		thumbnailURL := ""
 		if len(article.Thumbnails) > 0 {
-			thumbnailURL = fmt.Sprintf("%s/api/article/thumbnail/%s", baseURL, article.ArticleUID)
+			thumbnailURL = fmt.Sprintf("%s/api/home/articles/%s/thumbnail", baseURL, article.ArticleUID)
 		}
 
 		item := map[string]interface{}{

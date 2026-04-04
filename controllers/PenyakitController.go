@@ -25,7 +25,7 @@ func SavePenyakit(c *gin.Context) {
 		return
 	}
 
-	penyakits := models.Penyakit{
+	penyakits := &models.Penyakit{
 		KodePenyakit:    inputPenyakit.KodePenyakit,
 		NamaPenyakit:    inputPenyakit.NamaPenyakit,
 		Description:     inputPenyakit.Description,
@@ -94,7 +94,7 @@ func UpdatePenyakit(c *gin.Context) {
 	var inputPenyakitUpdate struct {
 		KodePenyakit    string `json:"kode_penyakit" binding:"required"`
 		NamaPenyakit    string `json:"nama_penyakit" binding:"required"`
-		Descripcion     string `json:"descripcion" binding:"required"`
+		Description     string `json:"description" binding:"required"`
 		SaranPenanganan string `json:"saran_penanganan" binding:"required"`
 	}
 
@@ -126,8 +126,8 @@ func UpdatePenyakit(c *gin.Context) {
 		penyakits.NamaPenyakit = inputPenyakitUpdate.NamaPenyakit
 	}
 
-	if inputPenyakitUpdate.Descripcion != "" {
-		penyakits.Description = inputPenyakitUpdate.Descripcion
+	if inputPenyakitUpdate.Description != "" {
+		penyakits.Description = inputPenyakitUpdate.Description
 	}
 
 	if inputPenyakitUpdate.SaranPenanganan != "" {

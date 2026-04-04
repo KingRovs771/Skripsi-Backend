@@ -120,14 +120,14 @@ func GetProfilePakar(c *gin.Context) {
 		})
 		return
 	}
-	NomorSIP := claims.ID
+	uid := claims.ID
 
 	var PakarProfiles models.Pakar
 	if err := database.DB.Select("pakars.nomor_s_ip, pakars.pakar_uid, pakars.role_uid,"+
 		"pakars.nama_lengkap, pakars.phone, pakars.email,"+
 		"pakars.alamat, pakars.created_at,"+
 		"roles.role_name",
-	).Joins("left join roles on roles.role_uid = pakars.role_uid").Where("pakars.nomor_s_ip = ?", NomorSIP).First(&PakarProfiles).Error; err != nil {
+	).Joins("left join roles on roles.role_uid = pakars.role_uid").Where("pakars.pakar_uid = ?", uid).First(&PakarProfiles).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Error",
 			"Message": "Profile Pakar not found",

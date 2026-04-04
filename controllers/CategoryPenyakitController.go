@@ -10,9 +10,9 @@ import (
 
 func SaveCategoryPenyakit(c *gin.Context) {
 	var inputCategoryInput struct {
-		NamaCategory string `form:"nama_category"`
-		KodeCategory string `form:"kode_category"`
-		Deskripsi    string `form:"deskripsi"`
+		NamaCategory string `form:"nama_category" json:"nama_category"`
+		KodeCategory string `form:"kode_category" json:"kode_category"`
+		Deskripsi    string `form:"deskripsi" json:"deskripsi"`
 	}
 
 	if err := c.ShouldBindJSON(&inputCategoryInput); err != nil {
@@ -85,9 +85,9 @@ func UpdateCategoryPenyakit(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var inputCategoryInput struct {
-		NamaCategory string `form:"nama_category"`
-		KodeCategory string `form:"kode_category"`
-		Deskripsi    string `form:"deskripsi"`
+		NamaCategory string `form:"nama_category" json:"nama_category"`
+		KodeCategory string `form:"kode_category" json:"kode_category"`
+		Deskripsi    string `form:"deskripsi" json:"deskripsi"`
 	}
 
 	if err := c.ShouldBindJSON(
@@ -136,7 +136,7 @@ func UpdateCategoryPenyakit(c *gin.Context) {
 
 func DeleteCategoryPenyakit(c *gin.Context) {
 	uid := c.Param("uid")
-	cp, err := models.GetCategoryPenyakitByUID(uid)
+	err := models.DeleteCategoryPenyakits(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
@@ -149,6 +149,6 @@ func DeleteCategoryPenyakit(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Status":  "OK",
 		"Message": "Delete Category Penyakit",
-		"Data":    cp,
+		"Data":    err,
 	})
 }

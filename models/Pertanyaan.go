@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/html"
+	"html"
 	"gorm.io/gorm"
 )
 
@@ -46,13 +46,12 @@ func (a *Pertanyaan) BeforeUpdate(db *gorm.DB) error {
 	return nil
 }
 
-func (a *Pertanyaan) SavePertanyaan() (Pertanyaan, error) {
-	var quest Pertanyaan
-	err := database.DB.Create(&quest).Error
+func (a *Pertanyaan) SavePertanyaan() (*Pertanyaan, error) {
+	err := database.DB.Create(a).Error
 	if err != nil {
-		return quest, err
+		return nil, err
 	}
-	return quest, nil
+	return a, nil
 }
 
 func GetAllPertanyaan() ([]Pertanyaan, error) {

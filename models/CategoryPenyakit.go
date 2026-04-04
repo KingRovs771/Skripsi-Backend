@@ -40,14 +40,12 @@ func (c *CategoryPenyakit) BeforeUpdate(db *gorm.DB) error {
 	return nil
 }
 
-func (c *CategoryPenyakit) SaveCategoryPenyakits() (CategoryPenyakit, error) {
-	var categorypenyakit CategoryPenyakit
-
-	err := database.DB.Create(&categorypenyakit).Error
+func (c *CategoryPenyakit) SaveCategoryPenyakits() (*CategoryPenyakit, error) {
+	err := database.DB.Create(c).Error
 	if err != nil {
-		return categorypenyakit, err
+		return nil, err
 	}
-	return categorypenyakit, nil
+	return c, nil
 }
 
 func GetAllCategoryPenyakits() ([]CategoryPenyakit, error) {

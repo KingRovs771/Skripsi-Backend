@@ -151,10 +151,49 @@ func main() {
 	CategoriesRoute := router.Group("/categories")
 	CategoriesRoute.GET("/getAllCategories", controllers.GetAllCategories)
 
+	//Pakar
 	//Manajemen Artikel Pakar
 	ArtikelPakarRoutes := router.Group("/api/artikelpakar")
 	ArtikelPakarRoutes.Use(middleware.RequireAuth())
 	ArtikelPakarRoutes.GET("/getAllArtikel", controllers.GetArticlesByAuthor)
+	ArtikelPakarRoutes.GET("/getArtikelByUID/:uid", controllers.GetArticleByUID)
+	ArtikelPakarRoutes.PUT("/updateArticle/:uid", controllers.UpdateArticle)
+	ArtikelPakarRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
+
+	//Basis Data
+	//Penyakit
+	PenyakitRoutes := router.Group("/api/penyakit")
+	PenyakitRoutes.Use(middleware.RequireAuth())
+	PenyakitRoutes.GET("/getAllPenyakits", controllers.GetAllPenyakits)
+	PenyakitRoutes.GET("/getPenyakitsByUID/:uid", controllers.GetPenyakitByUID)
+	PenyakitRoutes.POST("/createPenyakit", controllers.SavePenyakit)
+	PenyakitRoutes.PUT("/updatePenyakit/:uid", controllers.UpdatePenyakit)
+	PenyakitRoutes.DELETE("/deletePenyakit/:uid", controllers.DeletePenyakit)
+	//Pertanyaan
+	PertanyaanRoutes := router.Group("/api/pertanyaan")
+	PertanyaanRoutes.Use(middleware.RequireAuth())
+	PertanyaanRoutes.GET("/getAllPertanyaans", controllers.GetAllPertanyaans)
+	PertanyaanRoutes.GET("/getPertanyaan/:uid", controllers.GetPertanyaanByUID)
+	PertanyaanRoutes.POST("/createPertanyaan", controllers.SavePertanyaan)
+	PertanyaanRoutes.PUT("/updatePertanyaan/:uid", controllers.UpdatePertanyaan)
+	PertanyaanRoutes.DELETE("/deletePertanyaan/:uid", controllers.DeletePertanyaan)
+	//Aturan(Rules)
+	AturanRoutes := router.Group("/api/aturan")
+	AturanRoutes.Use(middleware.RequireAuth())
+	AturanRoutes.GET("/getAllAturan", controllers.GetAllAturan)
+	AturanRoutes.GET("/getAturan/:uid", controllers.GetAturanByUID)
+	AturanRoutes.POST("/createAturan", controllers.SaveAturan)
+	AturanRoutes.PUT("/updateAturan/:uid", controllers.UpdateAturan)
+	AturanRoutes.DELETE("/deleteAturan/:uid", controllers.DeleteAturan)
+
+	//TypeTes
+	TesRoutes := router.Group("/api/tesType")
+	TesRoutes.Use(middleware.RequireAuth())
+	TesRoutes.GET("/getAllTypeTes", controllers.GetCategoryPenyakits)
+	TesRoutes.POST("/createTypeTes", controllers.SaveCategoryPenyakit)
+	TesRoutes.GET("/getTypeTesByUID/:uid", controllers.GetCategoryPenyakitsByUID)
+	TesRoutes.PUT("/updateTypeTes/:uid", controllers.UpdateCategoryPenyakit)
+	TesRoutes.DELETE("/deleteTypeTes/:uid", controllers.DeleteCategoryPenyakit)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

@@ -24,7 +24,7 @@ func SavePertanyaan(c *gin.Context) {
 		return
 	}
 
-	quest := models.Pertanyaan{
+	quest := &models.Pertanyaan{
 		KodePertanyaan:     inputPertanyan.KodePertanyaan,
 		KategoriPertanyaan: inputPertanyan.KategoriPertanyaan,
 		Pertanyaan:         inputPertanyan.Pertanyaan,
@@ -42,9 +42,10 @@ func SavePertanyaan(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"Status":  "Created",
-		"Message": "Pertanyaan Berhasil Disimpan",
-		"Data":    result,
+		"Status":         "Created",
+		"Message":        "Pertanyaan Berhasil Disimpan",
+		"Data":           result,
+		"DEBUG_PAYLOAD":  inputPertanyan,
 	})
 }
 
@@ -114,21 +115,35 @@ func UpdatePertanyaan(c *gin.Context) {
 	}
 
 	if inputPertanyan.KodePertanyaan != "" {
-		inputPertanyan.KodePertanyaan = quest.KodePertanyaan
+		quest.KodePertanyaan = inputPertanyan.KodePertanyaan
 	}
 
 	if inputPertanyan.KategoriPertanyaan != "" {
-		inputPertanyan.KategoriPertanyaan = quest.KategoriPertanyaan
+		quest.KategoriPertanyaan = inputPertanyan.KategoriPertanyaan
 	}
 
 	if inputPertanyan.Pertanyaan != "" {
-		inputPertanyan.Pertanyaan = quest.Pertanyaan
+		quest.Pertanyaan = inputPertanyan.Pertanyaan
 	}
 
 	if inputPertanyan.Bobot != 0 {
-		inputPertanyan.Bobot = quest.Bobot
+		quest.Bobot = inputPertanyan.Bobot
 	}
 
+	if err := quest.UpdatePertanyaan(uid); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Failed to Update Pertanyaan",
+			"Error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Pertanyaan Berhasil Diperbarui",
+		"Data":    quest,
+	})
 }
 
 func DeletePertanyaan(c *gin.Context) {
