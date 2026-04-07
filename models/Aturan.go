@@ -42,13 +42,12 @@ func (a *Aturan) BeforeUpdate(db *gorm.DB) error {
 	return nil
 }
 
-func (a *Aturan) SaveAturan() (Aturan, error) {
-	var aturan Aturan
-	err := database.DB.Create(&aturan).Error
+func (a *Aturan) SaveAturan() (*Aturan, error) {
+	err := database.DB.Create(a).Error
 	if err != nil {
-		return aturan, err
+		return nil, err
 	}
-	return aturan, nil
+	return a, nil
 }
 
 func GetAllAturan() ([]Aturan, error) {
@@ -70,7 +69,7 @@ func GetAturanByUID(uid string) (Aturan, error) {
 }
 
 func (a *Aturan) UpdateAturan(uid string) error {
-	err := database.DB.Where("aturan_uid = ?", a.AturanID).Updates(a).Error
+	err := database.DB.Where("aturan_uid = ?", uid).Select("KodePenyakit", "KodePertanyaan", "MinValue", "IsMandatory", "UpdateAt").Updates(a).Error
 	return err
 }
 

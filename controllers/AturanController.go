@@ -1,9 +1,162 @@
 package controllers
 
-import "github.com/gin-gonic/gin"
+import (
+	"Skripsi-Backend/database"
+	"Skripsi-Backend/models"
+	"net/http"
 
-func GetAllAturan(c *gin.Context)   {}
-func SaveAturan(c *gin.Context)     {}
-func GetAturanByUID(c *gin.Context) {}
-func UpdateAturan(c *gin.Context)   {}
-func DeleteAturan(c *gin.Context)   {}
+	"github.com/gin-gonic/gin"
+)
+
+func GetAllAturan(c *gin.Context) {
+	Aturan, err := models.GetAllAturan()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Bad Request Server",
+			"Error":   err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Aturan Successfully Get",
+		"Data":    Aturan,
+	})
+}
+func SaveAturan(c *gin.Context) {
+	var InputAturan struct {
+		AturanUID      string `json:"aturan_uid"`
+		KodePenyakit   string `json:"kode_penyakit" binding:"required"`
+		KodePertanyaan string `json:"kode_pertanyaan" binding:"required"`
+		MinValue       int64  `json:"min_value"`
+		IsMandatory    int64  `json:"is_mandatory"`
+	}
+
+	if err := c.ShouldBindJSON(&InputAturan); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Silakan Ulangi Lagi Input Aturan",
+			"Error":   err,
+		})
+		return
+	}
+	aturan := models.Aturan{
+		AturanUID:      InputAturan.AturanUID,
+		KodePenyakit:   InputAturan.KodePenyakit,
+		KodePertanyaan: InputAturan.KodePertanyaan,
+		MinValue:       InputAturan.MinValue,
+		IsMandatory:    InputAturan.IsMandatory,
+	}
+
+	result, err := aturan.SaveAturan()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Silakan Ulangi Lagi Input Aturan",
+			"Error":   err,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Aturan Successfully Saved",
+		"Data":    result,
+	})
+}
+func GetAturanByUID(c *gin.Context) {
+	uid := c.Param("uid")
+	aturan, err := models.GetAturanByUID(uid)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Data Aturan Not Found",
+			"Error":   err,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Aturan Successfully Get",
+		"Data":    aturan,
+	})
+}
+func UpdateAturan(c *gin.Context) {
+	uid := c.Param("uid")
+
+	var InputAturan struct {
+		KodePenyakit   string `json:"kode_penyakit" binding:"required"`
+		KodePertanyaan string `json:"kode_pertanyaan" binding:"required"`
+		MinValue       int64  `json:"min_value"`
+		IsMandatory    int64  `json:"is_mandatory"`
+	}
+
+	if err := c.ShouldBindJSON(&InputAturan); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Silakan Ulangi Lagi Input Aturan",
+			"Error":   err,
+		})
+		return
+	}
+
+	var aturan models.Aturan
+
+	if err := database.DB.Where("aturan_uid = ?", uid).First(&aturan).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Data Aturan Not Found",
+			"Error":   err,
+		})
+		return
+	}
+
+	if InputAturan.KodePenyakit != aturan.KodePenyakit {
+		aturan.KodePenyakit = InputAturan.KodePenyakit
+	}
+
+	if InputAturan.KodePertanyaan != aturan.KodePertanyaan {
+		aturan.KodePertanyaan = InputAturan.KodePertanyaan
+	}
+
+	if InputAturan.MinValue != aturan.MinValue {
+		aturan.MinValue = InputAturan.MinValue
+	}
+
+	if InputAturan.IsMandatory != aturan.IsMandatory {
+		aturan.IsMandatory = InputAturan.IsMandatory
+	}
+
+	if err := aturan.UpdateAturan(uid); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Data Aturan Gagal Terupdate",
+			"Error":   err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Aturan Successfully Updated",
+		"Data":    aturan,
+	})
+}
+func DeleteAturan(c *gin.Context) {
+	uid := c.Param("uid")
+	err := models.DeleteAturan(uid)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status":  "Bad Request",
+			"Message": "Data Aturan Not Found",
+			"Error":   err,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"Status":  "OK",
+		"Message": "Aturan Successfully Deleted",
+		"Data":    err,
+	})
+}
