@@ -173,7 +173,7 @@ func main() {
 	PertanyaanRoutes := router.Group("/api/pertanyaan")
 	PertanyaanRoutes.Use(middleware.RequireAuth())
 	PertanyaanRoutes.GET("/getAllPertanyaans", controllers.GetAllPertanyaans)
-	PertanyaanRoutes.GET("/getPertanyaan/:uid", controllers.GetPertanyaanByUID)
+	PertanyaanRoutes.GET("/getPertanyaanByUID/:uid", controllers.GetPertanyaanByUID)
 	PertanyaanRoutes.POST("/createPertanyaan", controllers.SavePertanyaan)
 	PertanyaanRoutes.PUT("/updatePertanyaan/:uid", controllers.UpdatePertanyaan)
 	PertanyaanRoutes.DELETE("/deletePertanyaan/:uid", controllers.DeletePertanyaan)

@@ -109,7 +109,7 @@ func UpdatePenyakit(c *gin.Context) {
 
 	var penyakits models.Penyakit
 
-	if err := database.DB.Where("id = ?", uid).First(&penyakits).Error; err != nil {
+	if err := database.DB.Where("penyakit_uid = ?", uid).First(&penyakits).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Status":  "Error",
 			"Message": "Invalid Server",
