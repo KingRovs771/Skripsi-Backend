@@ -5,15 +5,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"html"
+
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Pertanyaan struct {
-	PertanyaanId       int       `gorm:"primaryKey;uniqueIndex" json:"pertanyaan_id"`
-	PertanyaanUID      string    `gorm:"varchar(255)" json:"pertanyaan_uid"`
-	KodePertanyaan     string    `gorm:"varchar(255)" json:"kode_pertanyaan"`
+	PertanyaanId       int       `gorm:"primaryKey;autoIncrement" json:"pertanyaan_id"`
+	PertanyaanUID      string    `gorm:"varchar(255);uniqueIndex" json:"pertanyaan_uid"`
+	KodePertanyaan     string    `gorm:"varchar(255);uniqueIndex" json:"kode_pertanyaan"`
 	KategoriPertanyaan string    `gorm:"type:varchar" json:"kategori_pertanyaan"`
 	Pertanyaan         string    `gorm:"text" json:"pertanyaan"`
 	Bobot              float64   `gorm:"type:decimal(10,2)" json:"bobot"`
