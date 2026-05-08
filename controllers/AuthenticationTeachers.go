@@ -13,7 +13,7 @@ import (
 
 func LoginTeachers(c *gin.Context) {
 	var LoginTeachers struct {
-		Email    string `json:"email" binding:"required, email"`
+		Email    string `json:"email" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 
@@ -79,11 +79,11 @@ func GetProfileTeachers(c *gin.Context) {
 	NIP := claims.ID
 
 	var TeachersProfile models.Teachers
-	if err := database.DB.Select("teachers.nip, teachers.teachers_uid, teachers.role_uid,"+
+	if err := database.DB.Select("teachers.n_ip, teachers.teachers_uid, teachers.role_uid,"+
 		"teachers.nama_lengkap, teachers.phone, teachers.email,"+
-		"teachers.alamat, teachers.created_at, teachers.updated_at,"+
+		"teachers.alamat, teachers.created_at, teachers.update_at,"+
 		"roles.role_name",
-	).Joins("left join roles on roles.role_uid = teachers.role_uid").Where("teachers.nip = ?", NIP).First(&TeachersProfile).Error; err != nil {
+	).Joins("left join roles on roles.role_uid = teachers.role_uid").Where("teachers.n_ip = ?", NIP).First(&TeachersProfile).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Error",
 			"Message": "Profile Teachers not found",

@@ -15,6 +15,9 @@ type HasilDiagnosis struct {
 	FinalCemasPenyakit    string    `gorm:"type:varchar(30)" json:"final_cemas_penyakit"`
 	StatusValidasiCemas   string    `gorm:"type:varchar(50)" json:"status_validasi_cemas"` // CONFIRMED / ADJUSTED
 	TinjauanBK            string    `gorm:"type:varchar(50);default:'MENUNGGU'" json:"tinjauan_bk"`
+	IsVisibleToStudent    bool      `gorm:"default:false" json:"is_visible_to_student"`
+	ReviewedByGurubk      bool      `gorm:"default:false" json:"reviewed_by_gurubk"`
+	Rekomendasi           string    `gorm:"type:text" json:"rekomendasi"`
 	CreatedAt             time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt              time.Time `gorm:"type:timestamp" json:"update_at"`
 }

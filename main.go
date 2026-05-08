@@ -24,6 +24,7 @@ func main() {
 	database.Connect()
 	database.ConnectRedis()
 	err = database.DB.AutoMigrate(
+		&models.Penyakit{},
 		&models.Administrator{},
 		&models.Article{},
 		&models.Aturan{},
@@ -31,7 +32,6 @@ func main() {
 		&models.CategoryPenyakit{},
 		&models.HasilDiagnosis{},
 		&models.Pakar{},
-		&models.Penyakit{},
 		&models.Pertanyaan{},
 		&models.Role{},
 		&models.Sekolah{},
@@ -39,6 +39,7 @@ func main() {
 		&models.Teachers{},
 		&models.TestAnswer{},
 		&models.TestSession{},
+		&models.StudentFeedback{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
@@ -194,6 +195,24 @@ func main() {
 	TesRoutes.GET("/getTypeTesByUID/:uid", controllers.GetCategoryPenyakitsByUID)
 	TesRoutes.PUT("/updateTypeTes/:uid", controllers.UpdateCategoryPenyakit)
 	TesRoutes.DELETE("/deleteTypeTes/:uid", controllers.DeleteCategoryPenyakit)
+
+	//Fitur Utama
+	TesDiagnosis := router.Group("/api/diagnosis")
+	TesDiagnosis.Use(middleware.RequireAuth())
+	TesDiagnosis.POST("/startTes", controllers.StartTest)
+	TesDiagnosis.POST("/submitTes", controllers.SubmitTest)
+
+	// History Gurubk Routes
+	GurubkHistoryRoutes := router.Group("/api/gurubk/history")
+	GurubkHistoryRoutes.Use(middleware.RequireAuth())
+	GurubkHistoryRoutes.GET("", controllers.GetGurubkHistory)
+	GurubkHistoryRoutes.GET("/:nisn", controllers.GetGurubkHistoryDetail)
+	GurubkHistoryRoutes.PATCH("/review/:id", controllers.UpdateHistoryReview)
+
+	// History Siswa Routes
+	SiswaHistoryRoutes := router.Group("/api/siswa")
+	SiswaHistoryRoutes.Use(middleware.RequireAuth())
+	SiswaHistoryRoutes.GET("/my-history", controllers.GetStudentHistory)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

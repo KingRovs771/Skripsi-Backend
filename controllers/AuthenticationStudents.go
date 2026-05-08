@@ -64,7 +64,7 @@ func RegisterStudents(c *gin.Context) {
 
 func LoginStudents(c *gin.Context) {
 	var loginUser struct {
-		Email    string `json:"email" binding:"required, email"`
+		Email    string `json:"email" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 
@@ -137,9 +137,8 @@ func GetProfileStudents(c *gin.Context) {
 	}
 	studentsUID := claims.ID
 	var students models.Students
-	if err := database.DB.Select(`students.student_id, students.students_uid, students.role_uid,
-				students.nisn, students.nama_lengkap, students.npsn,
-				students.jenjang_pendidikan, students.kelas, students.no_hp,
+	if err := database.DB.Select(`students.students_id, students.students_uid, students.role_uid,
+				students.nisn, students.nama_lengkap, students.npsn, students.kelas, students.no_hp,
 				students.alamat, students.email, students.created_at, students.update_at,
 				roles.role_name`).Joins("left join roles on roles.role_uid = students.role_uid").Where("students_uid = ?", studentsUID).First(&students).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
