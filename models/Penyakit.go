@@ -35,6 +35,7 @@ func (p *Penyakit) BeforeSave(db *gorm.DB) error {
 
 	p.KodePenyakit = html.EscapeString(strings.TrimSpace(p.KodePenyakit))
 	p.NamaPenyakit = html.EscapeString(strings.TrimSpace(p.NamaPenyakit))
+	p.KodeTurunan = html.EscapeString(strings.TrimSpace(p.KodeTurunan))
 	p.Description = html.EscapeString(strings.TrimSpace(p.Description))
 	p.SaranPenanganan = html.EscapeString(strings.TrimSpace(p.SaranPenanganan))
 	p.CreatedAt = time.Now()
@@ -45,6 +46,7 @@ func (p *Penyakit) BeforeSave(db *gorm.DB) error {
 func (p *Penyakit) BeforeUpdate(db *gorm.DB) error {
 	p.KodePenyakit = html.EscapeString(strings.TrimSpace(p.KodePenyakit))
 	p.NamaPenyakit = html.EscapeString(strings.TrimSpace(p.NamaPenyakit))
+	p.KodeTurunan = html.EscapeString(strings.TrimSpace(p.KodeTurunan))
 	p.Description = html.EscapeString(strings.TrimSpace(p.Description))
 	p.SaranPenanganan = html.EscapeString(strings.TrimSpace(p.SaranPenanganan))
 	p.UpdateAt = time.Now()

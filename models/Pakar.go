@@ -47,7 +47,7 @@ func hashPasswordPakar(password string) (string, error) {
 	return string(bytes), err
 }
 
-func (p *Pakar) BeforeSave(*gorm.DB) error {
+func (p *Pakar) BeforeCreate(*gorm.DB) error {
 	uid, err := uuid.NewRandom()
 	p.PakarUID = uid.String()
 	if err != nil {

@@ -12,6 +12,7 @@ func SavePenyakit(c *gin.Context) {
 	var inputPenyakit struct {
 		KodePenyakit    string `json:"kode_penyakit" binding:"required"`
 		NamaPenyakit    string `json:"nama_penyakit" binding:"required"`
+		KodeTurunan     string `json:"kode_turunan"`
 		Description     string `json:"description" binding:"required"`
 		SaranPenanganan string `json:"saran_penanganan" binding:"required"`
 	}
@@ -28,6 +29,7 @@ func SavePenyakit(c *gin.Context) {
 	penyakits := &models.Penyakit{
 		KodePenyakit:    inputPenyakit.KodePenyakit,
 		NamaPenyakit:    inputPenyakit.NamaPenyakit,
+		KodeTurunan:     inputPenyakit.KodeTurunan,
 		Description:     inputPenyakit.Description,
 		SaranPenanganan: inputPenyakit.SaranPenanganan,
 	}
@@ -94,6 +96,7 @@ func UpdatePenyakit(c *gin.Context) {
 	var inputPenyakitUpdate struct {
 		KodePenyakit    string `json:"kode_penyakit" binding:"required"`
 		NamaPenyakit    string `json:"nama_penyakit" binding:"required"`
+		KodeTurunan     string `json:"kode_turunan"`
 		Description     string `json:"description" binding:"required"`
 		SaranPenanganan string `json:"saran_penanganan" binding:"required"`
 	}
@@ -124,6 +127,10 @@ func UpdatePenyakit(c *gin.Context) {
 
 	if inputPenyakitUpdate.NamaPenyakit != "" {
 		penyakits.NamaPenyakit = inputPenyakitUpdate.NamaPenyakit
+	}
+
+	if inputPenyakitUpdate.KodeTurunan != "" {
+		penyakits.KodeTurunan = inputPenyakitUpdate.KodeTurunan
 	}
 
 	if inputPenyakitUpdate.Description != "" {

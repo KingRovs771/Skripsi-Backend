@@ -38,7 +38,7 @@ func (u *Students) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 }
 
-func (u *Students) BeforeSave(*gorm.DB) error {
+func (u *Students) BeforeCreate(*gorm.DB) error {
 	//Create UUID
 	UniqueId, err := uuid.NewRandom()
 	if err != nil {

@@ -40,6 +40,7 @@ func main() {
 		&models.TestAnswer{},
 		&models.TestSession{},
 		&models.StudentFeedback{},
+		&models.Faqs{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal migrasi database: %v", err)
@@ -161,6 +162,11 @@ func main() {
 	ArtikelPakarRoutes.PUT("/updateArticle/:uid", controllers.UpdateArticle)
 	ArtikelPakarRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 
+	// Dashboard Pakar
+	PakarDashboardRoutes := router.Group("/api/pakar/dashboard")
+	PakarDashboardRoutes.Use(middleware.RequireAuth())
+	PakarDashboardRoutes.GET("", controllers.GetPakarDashboardData)
+
 	//Basis Data
 	//Penyakit
 	PenyakitRoutes := router.Group("/api/penyakit")
@@ -209,10 +215,28 @@ func main() {
 	GurubkHistoryRoutes.GET("/:nisn", controllers.GetGurubkHistoryDetail)
 	GurubkHistoryRoutes.PATCH("/review/:id", controllers.UpdateHistoryReview)
 
+	// FAQ Guru BK Routes
+	GurubkFaqRoutes := router.Group("/api/gurubk/faq")
+	GurubkFaqRoutes.Use(middleware.RequireAuth())
+	GurubkFaqRoutes.GET("/getAllFaqs", controllers.GetGuruBKFaqs)
+	GurubkFaqRoutes.GET("/getFaq/:uid", controllers.GetFaqByUID)
+	GurubkFaqRoutes.POST("/replyFaq/:uid", controllers.ReplyFaq)
+	GurubkFaqRoutes.DELETE("/deleteFaq/:uid", controllers.DeleteFaq)
+
 	// History Siswa Routes
 	SiswaHistoryRoutes := router.Group("/api/siswa")
 	SiswaHistoryRoutes.Use(middleware.RequireAuth())
 	SiswaHistoryRoutes.GET("/my-history", controllers.GetStudentHistory)
+	SiswaHistoryRoutes.POST("/ask-question", controllers.AskQuestion)
+	SiswaHistoryRoutes.GET("/my-questions", controllers.GetStudentQuestions)
+
+	// FAQ Pakar/Admin Routes
+	FaqRoutes := router.Group("/api/faq")
+	FaqRoutes.Use(middleware.RequireAuth())
+	FaqRoutes.GET("/getAllFaqs", controllers.GetAllFaqs)
+	FaqRoutes.GET("/getFaq/:uid", controllers.GetFaqByUID)
+	FaqRoutes.POST("/replyFaq/:uid", controllers.ReplyFaq)
+	FaqRoutes.DELETE("/deleteFaq/:uid", controllers.DeleteFaq)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
