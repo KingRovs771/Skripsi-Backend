@@ -4,9 +4,11 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +28,7 @@ type ArticleListResponse struct {
 	JudulArticle string    `json:"judul_article"`
 	Author       string    `json:"author"`
 	CategoryName string    `json:"category_name"`
+	Status       int64     `json:"status"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -39,12 +42,13 @@ type ArticleDetailResponse struct {
 }
 
 type ArticleInput struct {
-	ArticleUID   string `json:"article_uid"`
-	JudulArticle string `json:"judul_article"`
-	IsiArticle   string `json:"isi_article"`
-	Author       string `json:"author"`
-	CategoryUID  string `json:"category_uid"`
-	Status       int    `json:"status"`
+	ArticleUID   *string `json:"article_uid"`
+	JudulArticle *string `json:"judul_article"`
+	IsiArticle   *string `json:"isi_article"`
+	Author       *string `json:"author"`
+	CategoryUID  *string `json:"category_uid"`
+	Status       *int64  `json:"status"`
+	Thumbnails   *string `json:"thumbnails"` // Base64 string from frontend
 }
 
 func CreateArticle(c *gin.Context) {
@@ -203,6 +207,7 @@ func GetAllArticles(c *gin.Context) {
 			JudulArticle: article.JudulArticle,
 			Author:       article.Author,
 			CategoryName: categoryMap[article.CategoryUID],
+			Status:       article.Status,
 			CreatedAt:    article.CreatedAt,
 		})
 	}
@@ -272,7 +277,7 @@ func GetArticleThumbnail(c *gin.Context) {
 func GetAllArticlesHome(c *gin.Context) {
 	var articles []models.Article
 
-	if err := database.DB.Order("created_at desc").Limit(15).Find(&articles).Error; err != nil {
+	if err := database.DB.Where("status = ?", 1).Order("created_at desc").Limit(15).Find(&articles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
 			"Message": "Gagal mengambil artikel",
@@ -305,7 +310,7 @@ func GetAllArticlesHome(c *gin.Context) {
 			}
 
 			baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
-			thumbnailURL = fmt.Sprintf("%s/api/home/thumbnail/%s", baseURL, article.ArticleUID)
+			thumbnailURL = fmt.Sprintf("%s/api/home/articles/%s/thumbnail", baseURL, article.ArticleUID)
 		}
 
 		response = append(response, HomeArticleResponse{
@@ -326,7 +331,8 @@ func GetAllArticlesHome(c *gin.Context) {
 }
 
 func stripHtmlTags(content string) string {
-	return content
+	re := regexp.MustCompile("<[^>]*>")
+	return re.ReplaceAllString(content, "")
 }
 
 func GetThumbnailArticle(c *gin.Context) {
@@ -346,7 +352,7 @@ func GetThumbnailArticle(c *gin.Context) {
 
 func GetAllAriclesHome(c *gin.Context) {
 	var articles []models.Article
-	if err := database.DB.Order("created_at desc").Limit(15).Find(&articles).Error; err != nil {
+	if err := database.DB.Where("status = ?", 1).Order("created_at desc").Limit(15).Find(&articles).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
@@ -374,7 +380,7 @@ func GetAllAriclesHome(c *gin.Context) {
 
 		thumbnailURL := ""
 		if len(article.Thumbnails) > 0 {
-			baseURL := "rhttps://" + c.Request.Host
+			baseURL := "https://" + c.Request.Host
 			thumbnailURL = fmt.Sprintf("%s/api/home/articles/%s/thumbnail", baseURL, article.ArticleUID)
 		}
 
@@ -399,18 +405,17 @@ func UpdateArticle(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var artikel models.Article
-
 	if err := database.DB.Where("article_uid = ?", uid).First(&artikel).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"Status":  "Error",
-			"Message": "UID Tidak Ditemukan",
+			"Message": "Artikel tidak ditemukan",
 			"Error":   err.Error(),
 		})
 		return
 	}
 
 	var inputArticle ArticleInput
-	if err := c.ShouldBindBodyWithJSON(&inputArticle); err != nil {
+	if err := c.ShouldBindJSON(&inputArticle); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Status":  "Error",
 			"Message": "Invalid Input Data",
@@ -419,10 +424,37 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Model(&artikel).Updates(inputArticle).Error; err != nil {
+	// Update fields manually to handle pointers and special cases
+	if inputArticle.JudulArticle != nil {
+		artikel.JudulArticle = *inputArticle.JudulArticle
+	}
+	if inputArticle.IsiArticle != nil {
+		artikel.IsiArticle = *inputArticle.IsiArticle
+	}
+	if inputArticle.Author != nil {
+		artikel.Author = *inputArticle.Author
+	}
+	if inputArticle.CategoryUID != nil {
+		artikel.CategoryUID = *inputArticle.CategoryUID
+	}
+	if inputArticle.Status != nil {
+		artikel.Status = *inputArticle.Status
+	}
+
+	// Handle Thumbnail update if provided as base64
+	if inputArticle.Thumbnails != nil && *inputArticle.Thumbnails != "" {
+		// Decode base64 string
+		decoded, err := base64.StdEncoding.DecodeString(*inputArticle.Thumbnails)
+		if err == nil {
+			artikel.Thumbnails = decoded
+		}
+	}
+
+	// Save the updated article
+	if err := database.DB.Save(&artikel).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
-			"Message": "Internal Server Error",
+			"Message": "Gagal memperbarui artikel",
 			"Error":   err.Error(),
 		})
 		return
@@ -548,6 +580,7 @@ func GetArticlesByAuthor(c *gin.Context) {
 			"judul_article": article.JudulArticle,
 			"category_name": categoryMap[article.CategoryUID],
 			"author":        article.Author,
+			"status":        article.Status,
 			"status_label":  statusLabel,
 			"thumbnail_url": thumbnailURL,
 			"created_at":    article.CreatedAt.Format("02 January 2006"),

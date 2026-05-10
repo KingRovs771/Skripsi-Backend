@@ -31,6 +31,7 @@ type DashboardSummary struct {
 		TotalSiswa     int64 `json:"total_siswa"`
 		TesSelesai     int64 `json:"tes_selesai"`
 		ButuhPerhatian int64 `json:"butuh_perhatian"`
+		SesiAktif      int64 `json:"sesi_aktif"`
 	} `json:"stats"`
 
 	// Chart Data
@@ -38,6 +39,18 @@ type DashboardSummary struct {
 		Kategori string `json:"kategori"`
 		Jumlah   int64  `json:"jumlah"`
 	} `json:"grafik"`
+
+	// Monitoring Data
+	TrenMingguan []struct {
+		Hari  string `json:"hari"`
+		Total int64  `json:"total"`
+	} `json:"tren_mingguan"`
+
+	InstrumenStatus []struct {
+		Nama   string `json:"nama"`
+		Total  int64  `json:"total"`
+		Status string `json:"status"`
+	} `json:"instrumen_status"`
 }
 
 func GetFullDashboardData(c *gin.Context) {
@@ -51,14 +64,36 @@ func GetFullDashboardData(c *gin.Context) {
 		data.StatusSystem.Database = "CONNECTED"
 	}
 
+	// 1. Statistik Utama
 	database.DB.Model(&models.Students{}).Count(&data.Stats.TotalSiswa)
-	database.DB.Table("hasil_diagnoses").Count(&data.Stats.TesSelesai)
-	database.DB.Table("hasil_diagnoses").Where("nn_confidence_score > ?", 75).Count(&data.Stats.ButuhPerhatian)
+	database.DB.Table("test_sessions").Where("status = ?", "SELESAI").Count(&data.Stats.TesSelesai)
+	database.DB.Table("test_sessions").Where("status = ?", "BERJALAN").Count(&data.Stats.SesiAktif)
+	database.DB.Table("hasil_diagnoses").Where("skor_total > ?", 15).Count(&data.Stats.ButuhPerhatian)
 
+	// 2. Grafik Sebaran Penyakit (Fix Mapping)
 	database.DB.Table("hasil_diagnoses").
-		Select("final_penyakit, count(*) as jumlah").
-		Group("final_penyakit").
+		Select("final_depresi_penyakit as kategori, count(*) as jumlah").
+		Group("final_depresi_penyakit").
 		Scan(&data.Grafik)
+
+	// 3. Tren Mingguan
+	database.DB.Raw(`
+		SELECT TO_CHAR(created_at, 'Dy') as hari, count(*) as total 
+		FROM test_sessions 
+		WHERE created_at >= NOW() - INTERVAL '7 days' 
+		GROUP BY hari, DATE_TRUNC('day', created_at)
+		ORDER BY DATE_TRUNC('day', created_at)
+	`).Scan(&data.TrenMingguan)
+
+	// 4. Status Instrumen
+	data.InstrumenStatus = []struct {
+		Nama   string `json:"nama"`
+		Total  int64  `json:"total"`
+		Status string `json:"status"`
+	}{
+		{Nama: "PHQ-9 (Depresi)", Total: data.Stats.TesSelesai, Status: "Active"},
+		{Nama: "GAD-7 (Kecemasan)", Total: data.Stats.TesSelesai, Status: "Active"},
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"Status": "Success",

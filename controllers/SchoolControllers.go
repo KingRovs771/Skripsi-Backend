@@ -106,24 +106,28 @@ func UpdateSekolah(c *gin.Context) {
 		return
 	}
 
-	updates := make(map[string]interface{})
-	if input.NPSN != nil {
-		updates["npsn"] = *input.NPSN
-	}
-	if input.NamaSekolah != nil {
-		updates["nama_sekolah"] = *input.NamaSekolah
-	}
-	if input.Jenjang != nil {
-		updates["jenjang"] = *input.Jenjang
-	}
-	if input.AlamatSekolah != nil {
-		updates["alamat_sekolah"] = *input.AlamatSekolah
-	}
-
 	var sekolah models.Sekolah
 	if err := database.DB.Where("sekolah_uid = ?", uid).First(&sekolah).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sekolah tidak ditemukan"})
 		return
+	}
+
+	// Cek NPSN duplikat jika NPSN diubah
+	if *input.NPSN != sekolah.NPSN {
+		var count int64
+		database.DB.Model(&models.Sekolah{}).Where("npsn = ?", *input.NPSN).Count(&count)
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "NPSN tersebut sudah terdaftar di sistem"})
+			return
+		}
+	}
+
+	// Update struct fields
+	sekolah.NPSN = *input.NPSN
+	sekolah.NamaSekolah = *input.NamaSekolah
+	sekolah.Jenjang = *input.Jenjang
+	if input.AlamatSekolah != nil {
+		sekolah.AlamatSekolah = *input.AlamatSekolah
 	}
 
 	if err := sekolah.UpdateSekolah(uid); err != nil {
