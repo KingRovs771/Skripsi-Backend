@@ -55,7 +55,7 @@ func (u *Students) BeforeCreate(*gorm.DB) error {
 
 	u.NISN = html.EscapeString(strings.TrimSpace(u.NISN))
 	u.NamaLengkap = html.EscapeString(strings.TrimSpace(u.NamaLengkap))
-	u.NoHp = html.EscapeString(strings.TrimSpace(u.Email))
+	u.NoHp = html.EscapeString(strings.TrimSpace(u.NoHp))
 	u.Alamat = html.EscapeString(strings.TrimSpace(u.Alamat))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
 	u.CreatedAt = time.Now()
@@ -67,7 +67,7 @@ func (u *Students) BeforeUpdate(*gorm.DB) error {
 
 	u.NISN = html.EscapeString(strings.TrimSpace(u.NISN))
 	u.NamaLengkap = html.EscapeString(strings.TrimSpace(u.NamaLengkap))
-	u.NoHp = html.EscapeString(strings.TrimSpace(u.Email))
+	u.NoHp = html.EscapeString(strings.TrimSpace(u.NoHp))
 	u.Alamat = html.EscapeString(strings.TrimSpace(u.Alamat))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
 	u.UpdateAt = time.Now()

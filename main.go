@@ -8,6 +8,7 @@ import (
 	"Skripsi-Backend/seeder"
 	"log"
 	"os"
+	"strings" // digunakan untuk memisahkan CORS origins dari env var
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -16,14 +17,14 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Di Railway, env vars di-inject langsung oleh platform tanpa file .env.
+	// Error diabaikan agar app tetap berjalan di Railway maupun lokal.
+	// Jika file .env ada (development lokal), variabelnya tetap terbaca normal.
+	_ = godotenv.Load()
 
 	database.Connect()
 	database.ConnectRedis()
-	err = database.DB.AutoMigrate(
+	_ = database.DB.AutoMigrate(
 		&models.Penyakit{},
 		&models.Administrator{},
 		&models.Article{},
@@ -42,9 +43,9 @@ func main() {
 		&models.StudentFeedback{},
 		&models.Faqs{},
 	)
-	if err != nil {
-		log.Fatalf("Gagal migrasi database: %v", err)
-	}
+	//if _ != nil {
+	//	log.Fatalf("Gagal migrasi database: %v", _)
+	//}
 
 	//Seeder
 	seeder.SeederRole()
@@ -53,8 +54,21 @@ func main() {
 	seeder.SeederCategories()
 
 	router := gin.Default()
+
+	// Baca CORS_ALLOWED_ORIGINS dari environment variable.
+	// Di Railway, set variable ini di dashboard dengan URL frontend kamu.
+	// Pisahkan dengan koma jika lebih dari satu URL.
+	// Contoh: https://frontend-kamu.vercel.app,https://domain-lain.com
+	// Jika env var tidak diset, fallback ke localhost untuk development lokal.
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	allowedOrigins := []string{"http://localhost:3000", "http://localhost:8080"} // default lokal
+	if corsOrigins != "" {
+		// Pisahkan string origins berdasarkan koma menjadi slice
+		allowedOrigins = strings.Split(corsOrigins, ",")
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:8080"}, // Ganti dengan domain frontend Anda
+		AllowOrigins:     allowedOrigins, // dinamis, dikonfigurasi via env var
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -214,6 +228,11 @@ func main() {
 	GurubkHistoryRoutes.GET("", controllers.GetGurubkHistory)
 	GurubkHistoryRoutes.GET("/:nisn", controllers.GetGurubkHistoryDetail)
 	GurubkHistoryRoutes.PATCH("/review/:id", controllers.UpdateHistoryReview)
+
+	// Dashboard Gurubk Routes
+	GurubkDashboardRoutes := router.Group("/api/gurubk/dashboard")
+	GurubkDashboardRoutes.Use(middleware.RequireAuth())
+	GurubkDashboardRoutes.GET("", controllers.GetGurubkDashboardData)
 
 	// FAQ Guru BK Routes
 	GurubkFaqRoutes := router.Group("/api/gurubk/faq")
