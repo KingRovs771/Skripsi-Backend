@@ -155,7 +155,7 @@ func SubmitTest(c *gin.Context) {
 	jsonData, _ := json.Marshal(aiPayload)
 
 	// Melakukan HTTP POST request ke server FastAPI
-	resp, err := http.Post("http://localhost:8000/predict", "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post("https://otak.mentalhealth.biz.id/predict", "application/json", bytes.NewBuffer(jsonData))
 
 	var aiResult AIResponse
 	if err != nil {
