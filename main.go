@@ -61,7 +61,7 @@ func main() {
 	// Contoh: https://frontend-kamu.vercel.app,https://domain-lain.com
 	// Jika env var tidak diset, fallback ke localhost untuk development lokal.
 	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
-	allowedOrigins := []string{"http://localhost:3000", "http://localhost:8080"} // default lokal
+	allowedOrigins := []string{"http://localhost:3000", "http://localhost:8080", "https://www.mentalhealth.web.id", "www.mentalhealth.web.id"} // default lokal
 	if corsOrigins != "" {
 		// Pisahkan string origins berdasarkan koma menjadi slice
 		allowedOrigins = strings.Split(corsOrigins, ",")
