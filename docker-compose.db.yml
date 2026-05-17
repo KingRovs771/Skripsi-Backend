@@ -1,0 +1,59 @@
+# docker-compose.db.yml
+# Khusus untuk VPS 2 (PostgreSQL & Redis)
+#
+# Cara deploy:
+# 1. Copy file .env.example menjadi .env dan isi konfigurasi password-nya
+# 2. Jalankan: docker compose -f docker-compose.db.yml up -d
+
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: skripsi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password_db_rahasia}
+      POSTGRES_DB: ${POSTGRES_DB:-skripsi_db}
+    ports:
+      - "5432:5432" # Ekspor port agar bisa diakses oleh VPS 1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-skripsi_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: skripsi_redis
+    restart: unless-stopped
+    # Menjalankan redis dengan requirepass yang mengambil value dari env file REDIS_PASSWORD
+    command: >
+      sh -c '
+      if [ -n "$$REDIS_PASSWORD" ]; then
+        redis-server --requirepass "$$REDIS_PASSWORD"
+      else
+        redis-server
+      fi
+      '
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password_redis_rahasia}
+    ports:
+      - "6379:6379" # Ekspor port agar bisa diakses oleh VPS 1
+    volumes:
+      - redis_data:/data
+    networks:
+      - data_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  data_net:
+    driver: bridge

@@ -12,16 +12,17 @@ var RDB *redis.Client
 var Ctx = context.Background()
 
 func ConnectRedis() {
-	dsn := os.Getenv("REDIS_URL") // Contoh: localhost:6379
+	dsn := os.Getenv("REDIS_URL") // Contoh: redis://:password@localhost:6379/0
 	if dsn == "" {
-		dsn = "localhost:6379"
+		dsn = "redis://localhost:6379/0"
 	}
 
-	RDB = redis.NewClient(&redis.Options{
-		Addr:     dsn,
-		Password: "",
-		DB:       0,
-	})
+	opt, err := redis.ParseURL(dsn)
+	if err != nil {
+		log.Fatalf("Gagal memparsing REDIS_URL: %v", err)
+	}
+
+	RDB = redis.NewClient(opt)
 
 	_, err := RDB.Ping(Ctx).Result()
 	if err != nil {

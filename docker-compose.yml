@@ -1,16 +1,14 @@
 # docker-compose.yml
-# Digunakan untuk DEVELOPMENT LOKAL
-# Railway tidak menggunakan file ini — Railway langsung menggunakan Dockerfile
+# Khusus untuk VPS 1 (Aplikasi Backend Go)
+# Gunakan file .env untuk mengatur environment variables
 #
-# Cara pakai:
-#   docker compose up --build
-#
-# Akses API: http://localhost:8080
+# Cara deploy:
+# 1. Copy file .env.example menjadi .env dan isi dengan IP VPS 2 (DB & Redis)
+# 2. Jalankan: docker compose up -d --build
 
 version: "3.9"
 
 services:
-  # ── Aplikasi Go ──────────────────────────────────────────────
   app:
     build:
       context: .
@@ -19,62 +17,11 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    environment:
-      PORT: "8080"
-      DATABASE_URL: "postgres://postgres:postgres@db:5432/skripsi_db?sslmode=disable"
-      REDIS_URL: "redis:6379"
-      JWT_SECRET: "${JWT_SECRET:-change_me_in_production}"
-      TOKEN_HOUR_LIFESPAN: "${TOKEN_HOUR_LIFESPAN:-128}"
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    env_file:
+      - .env
     networks:
-      - skripsi_net
-
-  # ── PostgreSQL ────────────────────────────────────────────────
-  db:
-    image: postgres:16-alpine
-    container_name: skripsi_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: skripsi_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d skripsi_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - skripsi_net
-
-  # ── Redis ─────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: skripsi_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - skripsi_net
-
-volumes:
-  postgres_data:
-  redis_data:
+      - backend_net
 
 networks:
-  skripsi_net:
+  backend_net:
     driver: bridge
