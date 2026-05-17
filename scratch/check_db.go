@@ -5,7 +5,6 @@ import (
 	"Skripsi-Backend/models"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
 )
