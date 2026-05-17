@@ -24,7 +24,7 @@ func ConnectRedis() {
 
 	RDB = redis.NewClient(opt)
 
-	_, err := RDB.Ping(Ctx).Result()
+	_, err = RDB.Ping(Ctx).Result()
 	if err != nil {
 		log.Fatalf("Gagal terhubung ke Redis: %v", err)
 	}
