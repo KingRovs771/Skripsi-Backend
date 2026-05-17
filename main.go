@@ -8,7 +8,6 @@ import (
 	"Skripsi-Backend/seeder"
 	"log"
 	"os"
-	"strings" // digunakan untuk memisahkan CORS origins dari env var
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -55,22 +54,12 @@ func main() {
 
 	router := gin.Default()
 
-	// Baca CORS_ALLOWED_ORIGINS dari environment variable.
-	// Di Railway, set variable ini di dashboard dengan URL frontend kamu.
-	// Pisahkan dengan koma jika lebih dari satu URL.
-	// Contoh: https://frontend-kamu.vercel.app,https://domain-lain.com
-	// Jika env var tidak diset, fallback ke localhost untuk development lokal.
-	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
-	allowedOrigins := []string{"http://localhost:3000", "http://localhost:8080", "https://www.mentalhealth.web.id", "www.mentalhealth.web.id"} // default lokal
-	if corsOrigins != "" {
-		// Pisahkan string origins berdasarkan koma menjadi slice
-		allowedOrigins = strings.Split(corsOrigins, ",")
-	}
-
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins, // dinamis, dikonfigurasi via env var
+		AllowOriginFunc: func(origin string) bool {
+			return true // Mengizinkan semua origin secara dinamis
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
