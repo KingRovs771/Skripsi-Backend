@@ -34,6 +34,28 @@ func RegisterStudents(c *gin.Context) {
 		return
 	}
 
+	// Cek duplikat NISN
+	var nisnCount int64
+	database.DB.Model(&models.Students{}).Where("nisn = ?", registerUser.NISN).Count(&nisnCount)
+	if nisnCount > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"Status":  "Error",
+			"Message": "NISN sudah terdaftar, gunakan NISN yang berbeda atau lakukan login",
+		})
+		return
+	}
+
+	// Cek duplikat Email
+	var emailCount int64
+	database.DB.Model(&models.Students{}).Where("email = ?", registerUser.Email).Count(&emailCount)
+	if emailCount > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"Status":  "Error",
+			"Message": "Email sudah terdaftar, gunakan email lain atau lakukan login",
+		})
+		return
+	}
+
 	registerStudents := models.Students{
 		RoleUID:     registerUser.RoleUID,
 		NISN:        registerUser.NISN,
@@ -140,7 +162,10 @@ func GetProfileStudents(c *gin.Context) {
 	if err := database.DB.Select(`students.students_id, students.students_uid, students.role_uid,
 				students.nisn, students.nama_lengkap, students.npsn, students.kelas, students.no_hp,
 				students.alamat, students.email, students.created_at, students.update_at,
-				roles.role_name`).Joins("left join roles on roles.role_uid = students.role_uid").Where("students_uid = ?", studentsUID).First(&students).Error; err != nil {
+				roles.role_name, sekolahs.nama_sekolah`).
+		Joins("left join roles on roles.role_uid = students.role_uid").
+		Joins("left join sekolahs on sekolahs.npsn::text = students.npsn").
+		Where("students_uid = ?", studentsUID).First(&students).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"Status":  "Error",
 			"Message": "Invalid Token",
