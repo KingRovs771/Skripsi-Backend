@@ -14,7 +14,7 @@ var Ctx = context.Background()
 func ConnectRedis() {
 	dsn := os.Getenv("REDIS_URL") // Contoh: redis://:password@localhost:6379/0
 	if dsn == "" {
-		dsn = "redis://localhost:6379/0"
+		dsn = "redis://localhost:6379/"
 	}
 
 	opt, err := redis.ParseURL(dsn)

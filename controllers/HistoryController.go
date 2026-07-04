@@ -25,20 +25,22 @@ type StudentInfo struct {
 }
 
 type TestResult struct {
-	ID                 int       `gorm:"column:id" json:"id"`
-	SessionUID         string    `gorm:"column:session_uid" json:"session_uid"`
-	NamaTes            string    `gorm:"column:nama_tes" json:"nama_tes"`
-	Skor               int64     `gorm:"column:skor" json:"skor"`
-	SkorPHQ9           int64     `gorm:"column:skor_phq9" json:"skor_phq9"`
-	SkorGAD7           int64     `gorm:"column:skor_gad7" json:"skor_gad7"`
-	Kategori           string    `gorm:"column:kategori" json:"kategori"`
-	DepresiPenyakit    string    `gorm:"column:depresi_penyakit" json:"depresi_penyakit"`
-	CemasPenyakit      string    `gorm:"column:cemas_penyakit" json:"cemas_penyakit"`
-	Tanggal            time.Time `gorm:"column:tanggal" json:"tanggal"`
-	Rekomendasi        string    `gorm:"column:rekomendasi" json:"rekomendasi"`
-	CeritaSiswa        string    `gorm:"column:cerita_siswa" json:"cerita_siswa"`
-	IsVisibleToStudent bool      `gorm:"column:is_visible_to_student" json:"is_visible_to_student"`
-	ReviewedByGurubk   bool      `gorm:"column:reviewed_by_gurubk" json:"reviewed_by_gurubk"`
+	ID                  int       `gorm:"column:id" json:"id"`
+	SessionUID          string    `gorm:"column:session_uid" json:"session_uid"`
+	NamaTes             string    `gorm:"column:nama_tes" json:"nama_tes"`
+	Skor                int64     `gorm:"column:skor" json:"skor"`
+	SkorPHQ9            int64     `gorm:"column:skor_phq9" json:"skor_phq9"`
+	SkorGAD7            int64     `gorm:"column:skor_gad7" json:"skor_gad7"`
+	Kategori            string    `gorm:"column:kategori" json:"kategori"`
+	DepresiPenyakit     string    `gorm:"column:depresi_penyakit" json:"depresi_penyakit"`
+	CemasPenyakit       string    `gorm:"column:cemas_penyakit" json:"cemas_penyakit"`
+	Tanggal             time.Time `gorm:"column:tanggal" json:"tanggal"`
+	Rekomendasi         string    `gorm:"column:rekomendasi" json:"rekomendasi"`
+	CeritaSiswa         string    `gorm:"column:cerita_siswa" json:"cerita_siswa"`
+	IsVisibleToStudent  bool      `gorm:"column:is_visible_to_student" json:"is_visible_to_student"`
+	ReviewedByGurubk    bool      `gorm:"column:reviewed_by_gurubk" json:"reviewed_by_gurubk"`
+	NNDepresiConfidence float64   `gorm:"column:nn_depresi_confidence" json:"nn_depresi_confidence"`
+	NNCemasConfidence   float64   `gorm:"column:nn_cemas_confidence" json:"nn_cemas_confidence"`
 }
 
 type ReviewRequest struct {
@@ -101,7 +103,8 @@ func GetGurubkHistoryDetail(c *gin.Context) {
 		       ts.created_at as tanggal,
 		       hd.rekomendasi,
 		       sf.cerita_siswa,
-		       hd.is_visible_to_student, hd.reviewed_by_gurubk
+		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
+		       hd.nn_depresi_confidence, hd.nn_cemas_confidence
 		FROM students s
 		JOIN test_sessions ts ON s.students_uid = ts.user_uid
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
@@ -166,7 +169,8 @@ func GetStudentHistory(c *gin.Context) {
 		       ts.created_at as tanggal,
 		       hd.rekomendasi,
 		       sf.cerita_siswa,
-		       hd.is_visible_to_student, hd.reviewed_by_gurubk
+		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
+		       hd.nn_depresi_confidence, hd.nn_cemas_confidence
 		FROM test_sessions ts
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
 		LEFT JOIN student_feedbacks sf ON ts.test_session_id = sf.test_session_uid
