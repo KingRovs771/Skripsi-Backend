@@ -15,8 +15,9 @@ RUN go mod download
 # Copy seluruh source code
 COPY . .
 
-# Build binary dengan optimasi ukuran
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+# Build binary dengan optimasi ukuran & batas penggunaan memori (mencegah OOM compiler killed)
+RUN GOGC=50 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -p=1 \
     -ldflags="-w -s" \
     -o server \
     ./main.go
