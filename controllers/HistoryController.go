@@ -41,6 +41,8 @@ type TestResult struct {
 	ReviewedByGurubk    bool      `gorm:"column:reviewed_by_gurubk" json:"reviewed_by_gurubk"`
 	NNDepresiConfidence float64   `gorm:"column:nn_depresi_confidence" json:"nn_depresi_confidence"`
 	NNCemasConfidence   float64   `gorm:"column:nn_cemas_confidence" json:"nn_cemas_confidence"`
+	StatusValidasiDepresi string  `gorm:"column:status_validasi_depresi" json:"status_validasi_depresi"`
+	StatusValidasiCemas   string  `gorm:"column:status_validasi_cemas" json:"status_validasi_cemas"`
 }
 
 type ReviewRequest struct {
@@ -104,7 +106,8 @@ func GetGurubkHistoryDetail(c *gin.Context) {
 		       hd.rekomendasi,
 		       sf.cerita_siswa,
 		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
-		       hd.nn_depresi_confidence, hd.nn_cemas_confidence
+		       hd.nn_depresi_confidence, hd.nn_cemas_confidence,
+		       hd.status_validasi_depresi, hd.status_validasi_cemas
 		FROM students s
 		JOIN test_sessions ts ON s.students_uid = ts.user_uid
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
@@ -170,7 +173,8 @@ func GetStudentHistory(c *gin.Context) {
 		       hd.rekomendasi,
 		       sf.cerita_siswa,
 		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
-		       hd.nn_depresi_confidence, hd.nn_cemas_confidence
+		       hd.nn_depresi_confidence, hd.nn_cemas_confidence,
+		       hd.status_validasi_depresi, hd.status_validasi_cemas
 		FROM test_sessions ts
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
 		LEFT JOIN student_feedbacks sf ON ts.test_session_id = sf.test_session_uid
