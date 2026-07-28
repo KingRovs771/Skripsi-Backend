@@ -39,6 +39,7 @@ func main() {
 		&models.TestSession{},
 		&models.StudentFeedback{},
 		&models.Faqs{},
+		&models.BackupJob{},
 	)
 	//if _ != nil {
 	//	log.Fatalf("Gagal migrasi database: %v", _)
@@ -104,6 +105,21 @@ func main() {
 	AdminRoutes.GET("/getAdmin/:uid", controllers.GetAdministratorByUID)
 	AdminRoutes.PUT("/updateAdmin", controllers.UpdateAdministrator)
 	AdminRoutes.DELETE("/deleteAdmin", controllers.DeleteAdministrator)
+	// Monitoring sekolah (drill-down: sekolah → siswa → riwayat)
+	MonitoringRoutes := router.Group("/api/admin/monitoring")
+	MonitoringRoutes.Use(middleware.RequireAuth())
+	MonitoringRoutes.GET("/sekolah", controllers.GetSchoolMonitoring)
+	MonitoringRoutes.GET("/sekolah/:npsn/siswa", controllers.GetSchoolStudents)
+	MonitoringRoutes.GET("/siswa/:students_uid/riwayat", controllers.GetAdminStudentHistory)
+
+	// Backup manual dari dashboard Admin
+	BackupRoutes := router.Group("/api/admin/backup")
+	BackupRoutes.Use(middleware.RequireAuth())
+	BackupRoutes.POST("/trigger",              controllers.TriggerBackup)
+	BackupRoutes.GET("/jobs",                  controllers.ListBackupJobs)
+	BackupRoutes.GET("/jobs/:job_uid",         controllers.GetBackupJobStatus)
+	BackupRoutes.GET("/download/:job_uid",     controllers.DownloadBackupFile)
+
 	//Manajemen Role
 	RoleRoutes := router.Group("/api/role")
 	RoleRoutes.POST("/createRole", controllers.CreateRole)
