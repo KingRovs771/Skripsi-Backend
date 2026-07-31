@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"Skripsi-Backend/crypto"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type HasilDiagnosis struct {
 	ResultId              int       `gorm:"primary_key;autoIncrement" json:"result_id"`
@@ -20,4 +25,44 @@ type HasilDiagnosis struct {
 	Rekomendasi           string    `gorm:"type:text" json:"rekomendasi"`
 	CreatedAt             time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt              time.Time `gorm:"type:timestamp" json:"update_at"`
+}
+
+// ─── GORM Hooks untuk Enkripsi At-Rest (UU PDP) ──────────────────────────────
+
+func (hd *HasilDiagnosis) BeforeSave(tx *gorm.DB) error {
+	if hd.TinjauanBK != "" {
+		encrypted, err := crypto.EncryptField(hd.TinjauanBK)
+		if err != nil {
+			return err
+		}
+		hd.TinjauanBK = encrypted
+	}
+	if hd.Rekomendasi != "" {
+		encrypted, err := crypto.EncryptField(hd.Rekomendasi)
+		if err != nil {
+			return err
+		}
+		hd.Rekomendasi = encrypted
+	}
+	return nil
+}
+
+func (hd *HasilDiagnosis) AfterFind(tx *gorm.DB) error {
+	if hd.TinjauanBK != "" {
+		decrypted, err := crypto.DecryptField(hd.TinjauanBK)
+		if err == nil {
+			hd.TinjauanBK = decrypted
+		}
+	}
+	if hd.Rekomendasi != "" {
+		decrypted, err := crypto.DecryptField(hd.Rekomendasi)
+		if err == nil {
+			hd.Rekomendasi = decrypted
+		}
+	}
+	return nil
+}
+
+func (hd *HasilDiagnosis) AfterSave(tx *gorm.DB) error {
+	return hd.AfterFind(tx)
 }

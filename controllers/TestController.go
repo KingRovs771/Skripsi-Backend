@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -62,6 +63,26 @@ func StartTest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User UID tidak valid"})
 		return
 	}
+
+	// ── Cek Consent UU PDP ──────────────────────────────────────────────────
+	// Siswa wajib telah menyetujui kebijakan privasi versi aktif sebelum
+	// dapat memulai sesi tes. Ini adalah server-side guard (double-check).
+	consentVersion := "v1"
+	if v := os.Getenv("CONSENT_CURRENT_VERSION"); v != "" {
+		consentVersion = v
+	}
+	var existingConsent models.StudentConsent
+	consentErr := database.DB.
+		Where("student_uid = ? AND consent_version = ? AND is_agreed = true", req.UserUID, consentVersion).
+		First(&existingConsent).Error
+	if consentErr != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "CONSENT_REQUIRED",
+			"message": "Anda belum memberikan persetujuan penggunaan data. Harap setujui kebijakan privasi terlebih dahulu.",
+		})
+		return
+	}
+	// ────────────────────────────────────────────────────────────────────────
 
 	sessionID := uuid.New().String()
 	sesiBaru := models.TestSession{

@@ -6,6 +6,7 @@ import (
 	"Skripsi-Backend/middleware"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/seeder"
+	"Skripsi-Backend/utils"
 	"log"
 	"os"
 
@@ -21,6 +22,9 @@ func main() {
 
 	database.Connect()
 	database.ConnectRedis()
+
+	// Start background retention scheduler (Fitur 1B)
+	utils.StartRetentionScheduler()
 	_ = database.DB.AutoMigrate(
 		&models.Penyakit{},
 		&models.Administrator{},
@@ -40,6 +44,8 @@ func main() {
 		&models.StudentFeedback{},
 		&models.Faqs{},
 		&models.BackupJob{},
+		&models.StudentConsent{},      // Fitur 1A: UU PDP consent tracking
+		&models.KnowledgeBaseAuditLog{}, // Fitur 3: Audit trail
 	)
 	//if _ != nil {
 	//	log.Fatalf("Gagal migrasi database: %v", _)
@@ -105,6 +111,12 @@ func main() {
 	AdminRoutes.GET("/getAdmin/:uid", controllers.GetAdministratorByUID)
 	AdminRoutes.PUT("/updateAdmin", controllers.UpdateAdministrator)
 	AdminRoutes.DELETE("/deleteAdmin", controllers.DeleteAdministrator)
+	// Kebijakan Retensi Data (Fitur 1B)
+	AdminRoutes.GET("/retention/nearing-deletion", middleware.RequireAuth(), controllers.GetNearingDeletionStudents)
+	AdminRoutes.PUT("/retention/students/:uid/status", middleware.RequireAuth(), controllers.UpdateStudentStatus)
+	// Audit Trail Basis Pengetahuan (Fitur 3)
+	AdminRoutes.GET("/audit-logs", middleware.RequireAuth(), controllers.GetAuditLogs)
+
 	// Monitoring sekolah (drill-down: sekolah → siswa → riwayat)
 	MonitoringRoutes := router.Group("/api/admin/monitoring")
 	MonitoringRoutes.Use(middleware.RequireAuth())
@@ -207,6 +219,8 @@ func main() {
 	AturanRoutes.POST("/createAturan", controllers.SaveAturan)
 	AturanRoutes.PUT("/updateAturan/:uid", controllers.UpdateAturan)
 	AturanRoutes.DELETE("/deleteAturan/:uid", controllers.DeleteAturan)
+	AturanRoutes.POST("/simulasi", controllers.SimulateRules)
+
 
 	//TypeTes
 	TesRoutes := router.Group("/api/tesType")
@@ -249,6 +263,13 @@ func main() {
 	SiswaHistoryRoutes.GET("/my-history", controllers.GetStudentHistory)
 	SiswaHistoryRoutes.POST("/ask-question", controllers.AskQuestion)
 	SiswaHistoryRoutes.GET("/my-questions", controllers.GetStudentQuestions)
+	SiswaHistoryRoutes.GET("/tren-diagnosis/:student_uid", controllers.GetStudentDiagnosisTrend)
+
+	// Consent UU PDP Routes (Fitur 1A)
+	ConsentRoutes := router.Group("/api/siswa/consent")
+	ConsentRoutes.Use(middleware.RequireAuth())
+	ConsentRoutes.GET("/status", controllers.GetConsentStatus)
+	ConsentRoutes.POST("/submit", controllers.SubmitConsent)
 
 	// FAQ Pakar/Admin Routes
 	FaqRoutes := router.Group("/api/faq")

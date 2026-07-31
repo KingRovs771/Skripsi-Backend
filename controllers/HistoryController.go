@@ -18,10 +18,11 @@ type StudentHistorySummary struct {
 }
 
 type StudentInfo struct {
-	NISN  string `json:"nisn"`
-	Nama  string `json:"nama"`
-	Kelas string `json:"kelas"`
-	Email string `json:"email"`
+	NISN        string `json:"nisn"`
+	Nama        string `json:"nama"`
+	Kelas       string `json:"kelas"`
+	Email       string `json:"email"`
+	StudentsUID string `json:"students_uid"`
 }
 
 type TestResult struct {
@@ -43,6 +44,8 @@ type TestResult struct {
 	NNCemasConfidence   float64   `gorm:"column:nn_cemas_confidence" json:"nn_cemas_confidence"`
 	StatusValidasiDepresi string  `gorm:"column:status_validasi_depresi" json:"status_validasi_depresi"`
 	StatusValidasiCemas   string  `gorm:"column:status_validasi_cemas" json:"status_validasi_cemas"`
+	DepresiSaran        string    `gorm:"column:depresi_saran" json:"depresi_saran"`
+	CemasSaran          string    `gorm:"column:cemas_saran" json:"cemas_saran"`
 }
 
 type ReviewRequest struct {
@@ -87,7 +90,7 @@ func GetGurubkHistory(c *gin.Context) {
 func GetGurubkHistoryDetail(c *gin.Context) {
 	nisn := c.Param("nisn")
 	var studentInfo StudentInfo
-	if err := database.DB.Table("students").Where("nisn = ?", nisn).Select("nisn, nama_lengkap as nama, kelas, email").Scan(&studentInfo).Error; err != nil {
+	if err := database.DB.Table("students").Where("nisn = ?", nisn).Select("nisn, nama_lengkap as nama, kelas, email, students_uid").Scan(&studentInfo).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
@@ -107,7 +110,9 @@ func GetGurubkHistoryDetail(c *gin.Context) {
 		       sf.cerita_siswa,
 		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
 		       hd.nn_depresi_confidence, hd.nn_cemas_confidence,
-		       hd.status_validasi_depresi, hd.status_validasi_cemas
+		       hd.status_validasi_depresi, hd.status_validasi_cemas,
+		       COALESCE(p_depresi.saran_penanganan, '') as depresi_saran,
+		       COALESCE(p_cemas.saran_penanganan, '') as cemas_saran
 		FROM students s
 		JOIN test_sessions ts ON s.students_uid = ts.user_uid
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
@@ -174,7 +179,9 @@ func GetStudentHistory(c *gin.Context) {
 		       sf.cerita_siswa,
 		       hd.is_visible_to_student, hd.reviewed_by_gurubk,
 		       hd.nn_depresi_confidence, hd.nn_cemas_confidence,
-		       hd.status_validasi_depresi, hd.status_validasi_cemas
+		       hd.status_validasi_depresi, hd.status_validasi_cemas,
+		       COALESCE(p_depresi.saran_penanganan, '') as depresi_saran,
+		       COALESCE(p_cemas.saran_penanganan, '') as cemas_saran
 		FROM test_sessions ts
 		JOIN hasil_diagnoses hd ON ts.test_session_id = hd.session_test_uid
 		LEFT JOIN student_feedbacks sf ON ts.test_session_id = sf.test_session_uid

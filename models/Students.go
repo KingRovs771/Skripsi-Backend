@@ -23,10 +23,12 @@ type Students struct {
 	Kelas       string    `gorm:"type:varchar(50)" json:"kelas"`
 	NoHp        string    `gorm:"type:varchar(50)" json:"no_hp"`
 	Alamat      string    `gorm:"type:text" json:"alamat"`
-	Email       string    `gorm:"type:varchar(100)" json:"email"`
-	Password    string    `gorm:"type:varchar(255)" json:"password"`
-	CreatedAt   time.Time `gorm:"type:timestamp" json:"created_at"`
-	UpdateAt    time.Time `gorm:"type:timestamp" json:"update_at"`
+	Email       string     `gorm:"type:varchar(100)" json:"email"`
+	Password    string     `gorm:"type:varchar(255)" json:"password"`
+	StatusAkun  string     `gorm:"type:varchar(20);default:'AKTIF'" json:"status_akun"`      // "AKTIF", "LULUS", "PINDAH"
+	TanggalNonaktif *time.Time `gorm:"type:timestamp" json:"tanggal_nonaktif"`
+	CreatedAt   time.Time  `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt    time.Time  `gorm:"type:timestamp" json:"update_at"`
 }
 
 func hashPassword(password string) (string, error) {
@@ -58,6 +60,9 @@ func (u *Students) BeforeCreate(*gorm.DB) error {
 	u.NoHp = html.EscapeString(strings.TrimSpace(u.NoHp))
 	u.Alamat = html.EscapeString(strings.TrimSpace(u.Alamat))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+	if u.StatusAkun == "" {
+		u.StatusAkun = "AKTIF"
+	}
 	u.CreatedAt = time.Now()
 
 	return nil

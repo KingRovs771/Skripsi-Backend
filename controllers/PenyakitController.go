@@ -3,6 +3,7 @@ package controllers
 import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
+	"Skripsi-Backend/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -44,6 +45,9 @@ func SavePenyakit(c *gin.Context) {
 		})
 		return
 	}
+
+	// Audit Log (Fitur 3)
+	utils.WriteAuditLog(c, "penyakits", hasil.PenyakitUID, "CREATE", nil, hasil)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"Status":  "Created",
@@ -121,6 +125,9 @@ func UpdatePenyakit(c *gin.Context) {
 		return
 	}
 
+	// Snapshot data sebelum update (Fitur 3)
+	dataSebelum := penyakits
+
 	if inputPenyakitUpdate.KodePenyakit != "" {
 		penyakits.KodePenyakit = inputPenyakitUpdate.KodePenyakit
 	}
@@ -149,6 +156,9 @@ func UpdatePenyakit(c *gin.Context) {
 		})
 		return
 	}
+	// Audit Log (Fitur 3)
+	utils.WriteAuditLog(c, "penyakits", uid, "UPDATE", dataSebelum, penyakits)
+
 	c.JSON(http.StatusOK, gin.H{
 		"Status":  "Created",
 		"Message": "Data Penyakit Berhasil Disimpan",
@@ -158,6 +168,13 @@ func UpdatePenyakit(c *gin.Context) {
 
 func DeletePenyakit(c *gin.Context) {
 	uid := c.Param("uid")
+
+	// Fetch data sebelum delete untuk audit log (Fitur 3)
+	var dataSebelum models.Penyakit
+	if err := database.DB.Where("penyakit_uid = ?", uid).First(&dataSebelum).Error; err == nil {
+		utils.WriteAuditLog(c, "penyakits", uid, "DELETE", dataSebelum, nil)
+	}
+
 	err := models.DeletePenyakit(uid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
