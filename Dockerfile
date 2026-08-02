@@ -22,13 +22,11 @@ RUN GOGC=50 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o server \
     ./main.go
 
-# =============================================
 # Stage 2: Runner (image minimal)
-# =============================================
 FROM alpine:3.20 AS runner
 
-# Install ca-certificates dan tzdata agar HTTPS & timezone berfungsi
-RUN apk add --no-cache ca-certificates tzdata
+# Install ca-certificates, tzdata, bash, postgresql-client, dan gnupg agar skrip backup berfungsi
+RUN apk add --no-cache ca-certificates tzdata bash postgresql-client gnupg
 
 # Set timezone Asia/Jakarta
 ENV TZ=Asia/Jakarta
