@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -108,6 +109,50 @@ func TriggerBackup(c *gin.Context) {
 	}
 
 	// ── Jalankan skrip backup di background (non-blocking) ────────────────────
+	if runtime.GOOS == "windows" {
+		// Mock Mode untuk testing di Windows lokal tanpa bash/Linux toolchain
+		go func(jobUID string, backupType string) {
+			now := time.Now()
+			// Update status ke RUNNING dulu
+			database.DB.Model(&models.BackupJob{}).
+				Where("job_uid = ?", jobUID).
+				Updates(map[string]interface{}{
+					"status":     "RUNNING",
+					"started_at": now,
+				})
+
+			// Simulasikan pengerjaan backup selama 3 detik
+			time.Sleep(3 * time.Second)
+
+			// Buat dummy backup file di folder scratch lokal
+			dummyDir := "./scratch"
+			_ = os.MkdirAll(dummyDir, 0755)
+			dummyPath := dummyDir + "/dummy_backup.dump.gpg"
+			_ = os.WriteFile(dummyPath, []byte("DUMMY ENCRYPTED BACKUP FILE FOR TESTING ON WINDOWS"), 0644)
+
+			finishTime := time.Now()
+			database.DB.Model(&models.BackupJob{}).
+				Where("job_uid = ?", jobUID).
+				Updates(map[string]interface{}{
+					"status":        "SUCCESS",
+					"file_path":     dummyPath,
+					"file_size":     "12 KB",
+					"finished_at":   finishTime,
+				})
+		}(jobUID, req.Type)
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"Status":  "Accepted",
+			"Message": "Backup manual dipicu (Windows Mock Mode). Pantau status via job_uid",
+			"Data": gin.H{
+				"job_uid": jobUID,
+				"type":    req.Type,
+				"status":  "PENDING",
+			},
+		})
+		return
+	}
+
 	scriptPath := backupScriptPath()
 	jobIDArg := "--job-id=" + jobUID
 	cmd := exec.Command("bash", scriptPath, req.Type, jobIDArg)
