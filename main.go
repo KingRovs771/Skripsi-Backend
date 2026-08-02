@@ -116,6 +116,7 @@ func main() {
 	AdminRoutes.PUT("/retention/students/:uid/status", middleware.RequireAuth(), controllers.UpdateStudentStatus)
 	// Audit Trail Basis Pengetahuan (Fitur 3)
 	AdminRoutes.GET("/audit-logs", middleware.RequireAuth(), controllers.GetAuditLogs)
+	AdminRoutes.PUT("/sekolah/:uid/assign-pakar", middleware.RequireAuth(), controllers.AssignPakarToSchool)
 
 	// Monitoring sekolah (drill-down: sekolah → siswa → riwayat)
 	MonitoringRoutes := router.Group("/api/admin/monitoring")
@@ -202,6 +203,11 @@ func main() {
 	PakarDashboardRoutes := router.Group("/api/pakar/dashboard")
 	PakarDashboardRoutes.Use(middleware.RequireAuth())
 	PakarDashboardRoutes.GET("", controllers.GetPakarDashboardData)
+
+	// Sekolah Binaan Pakar
+	PakarBinaanRoutes := router.Group("/api/pakar")
+	PakarBinaanRoutes.Use(middleware.RequireAuth())
+	PakarBinaanRoutes.GET("/sekolah-binaan", controllers.GetPakarSekolahBinaan)
 
 	//Basis Data
 	//Penyakit

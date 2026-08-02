@@ -10,7 +10,11 @@ import (
 
 func GetSekolah(c *gin.Context) {
 	var Sekolah []models.Sekolah
-	if err := database.DB.Find(&Sekolah).Error; err != nil {
+	err := database.DB.Table("sekolahs").
+		Select("sekolahs.*, pakars.nama_lengkap as pakar_nama").
+		Joins("left join pakars on pakars.pakar_uid = sekolahs.pakar_uid").
+		Scan(&Sekolah).Error
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Status":  "Error",
 			"Message": "Gagal mengambil data dari database",
@@ -191,5 +195,39 @@ func SearchSekolah(c *gin.Context) {
 		"Status":  "OK",
 		"Message": "Data sekolah ditemukan",
 		"Data":    sekolahs,
+	})
+}
+
+func AssignPakarToSchool(c *gin.Context) {
+	uid := c.Param("uid")
+
+	var input struct {
+		PakarUID *string `json:"pakar_uid"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var sekolah models.Sekolah
+	if err := database.DB.Where("sekolah_uid = ?", uid).First(&sekolah).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Sekolah tidak ditemukan"})
+		return
+	}
+
+	var pUID string
+	if input.PakarUID != nil {
+		pUID = *input.PakarUID
+	}
+
+	if err := database.DB.Model(&sekolah).Update("pakar_uid", pUID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Pakar berhasil ditugaskan ke sekolah",
 	})
 }

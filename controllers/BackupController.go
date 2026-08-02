@@ -37,7 +37,8 @@ type TriggerBackupRequest struct {
 func TriggerBackup(c *gin.Context) {
 	// Pastikan user adalah Admin
 	userType, _ := c.Get("user_type")
-	if userType != "admin" {
+	userTypeStr, ok := userType.(string)
+	if !ok || (userTypeStr != "admin" && userTypeStr != "Administrator" && userTypeStr != "administrator") {
 		c.JSON(http.StatusForbidden, gin.H{
 			"Status":  "Error",
 			"Message": "Hanya Admin yang dapat memicu backup manual",

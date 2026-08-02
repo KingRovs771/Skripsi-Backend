@@ -18,6 +18,8 @@ type Sekolah struct {
 	NamaSekolah   string    `gorm:"type:varchar(100)" json:"nama_sekolah"`
 	Jenjang       string    `gorm:"type:varchar(20)" json:"jenjang"`
 	AlamatSekolah string    `gorm:"type:text" json:"alamat_sekolah"`
+	PakarUID      string    `gorm:"type:varchar(255);default:null" json:"pakar_uid"`
+	PakarNama     string    `gorm:"->;column:pakar_nama" json:"pakar_nama"`
 	CreatedAt     time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt      time.Time `gorm:"type:timestamp" json:"update_at"`
 }
@@ -60,7 +62,11 @@ func (s *Sekolah) SaveSekolah() (*Sekolah, error) {
 
 func GetSekolahByUID(uid string) (Sekolah, error) {
 	var sekolah Sekolah
-	err := database.DB.Where("sekolah_uid = ?", uid).First(&sekolah).Error
+	err := database.DB.Table("sekolahs").
+		Select("sekolahs.*, pakars.nama_lengkap as pakar_nama").
+		Joins("left join pakars on pakars.pakar_uid = sekolahs.pakar_uid").
+		Where("sekolahs.sekolah_uid = ?", uid).
+		Scan(&sekolah).Error
 	if err != nil {
 		return Sekolah{}, err
 	}
