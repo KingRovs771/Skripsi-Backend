@@ -514,12 +514,22 @@ func GetArticlesByAuthor(c *gin.Context) {
 		var admin models.Administrator
 		database.DB.Where("admin_uid = ?", claims.ID).First(&admin)
 		authorName = admin.NamaLengkap
+	} else if claims.UserType == "Teachers" || claims.UserType == "teacher" || claims.UserType == "gurubk" {
+		var teacher models.Teachers
+		dbErr := database.DB.Where("n_ip = ?", claims.ID).First(&teacher).Error
+		if dbErr != nil {
+			dbErr = database.DB.Where("nip = ?", claims.ID).First(&teacher).Error
+		}
+		if dbErr != nil {
+			dbErr = database.DB.Where("email = ?", claims.Email).First(&teacher).Error
+		}
+		authorName = teacher.NamaLengkap
 	}
 
 	if authorName == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"Status":  "Error",
-			"Message": "Sesi login tidak valid atau author tidak ditemukan",
+			"Message": fmt.Sprintf("Sesi login tidak valid atau author tidak ditemukan (UserType: %s, ID: %s)", claims.UserType, claims.ID),
 		})
 		return
 	}
