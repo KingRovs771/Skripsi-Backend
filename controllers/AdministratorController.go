@@ -70,10 +70,11 @@ func GetFullDashboardData(c *gin.Context) {
 	database.DB.Table("test_sessions").Where("status = ?", "BERJALAN").Count(&data.Stats.SesiAktif)
 	database.DB.Table("hasil_diagnoses").Where("skor_total > ?", 15).Count(&data.Stats.ButuhPerhatian)
 
-	// 2. Grafik Sebaran Penyakit (Fix Mapping)
-	database.DB.Table("hasil_diagnoses").
-		Select("final_depresi_penyakit as kategori, count(*) as jumlah").
-		Group("final_depresi_penyakit").
+	// 2. Grafik Sebaran Penyakit — JOIN ke penyakits agar nama tampil, bukan kode
+	database.DB.Table("hasil_diagnoses hd").
+		Select("COALESCE(p.nama_penyakit, hd.final_depresi_penyakit) as kategori, count(*) as jumlah").
+		Joins("LEFT JOIN penyakits p ON hd.final_depresi_penyakit = p.kode_penyakit").
+		Group("hd.final_depresi_penyakit, p.nama_penyakit").
 		Scan(&data.Grafik)
 
 	// 3. Tren Mingguan

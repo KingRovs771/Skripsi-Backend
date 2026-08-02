@@ -189,6 +189,15 @@ func main() {
 	ArtikelPakarRoutes.PUT("/updateArticle/:uid", controllers.UpdateArticle)
 	ArtikelPakarRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
 
+	//Manajemen Artikel Guru BK
+	ArtikelGurubkRoutes := router.Group("/api/article/gurubk")
+	ArtikelGurubkRoutes.Use(middleware.RequireAuth())
+	ArtikelGurubkRoutes.GET("/getArticles", controllers.GetArticlesByAuthor)
+	ArtikelGurubkRoutes.POST("/createArticles", controllers.CreateArticle)
+	ArtikelGurubkRoutes.GET("/getArticleUID/:uid", controllers.GetArticleByUID)
+	ArtikelGurubkRoutes.PUT("/updateArticle/:uid", controllers.UpdateArticle)
+	ArtikelGurubkRoutes.DELETE("/deleteArticle/:uid", controllers.DeleteArticle)
+
 	// Dashboard Pakar
 	PakarDashboardRoutes := router.Group("/api/pakar/dashboard")
 	PakarDashboardRoutes.Use(middleware.RequireAuth())

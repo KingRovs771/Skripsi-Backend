@@ -37,14 +37,15 @@ func GetPakarDashboardData(c *gin.Context) {
 		Count(&data.Stats.ButuhPerhatian)
 
 	// 4. Data Grafik - Sebaran Penyakit (Gabungan Depresi dan Cemas)
-	// Kita ambil distribusi dari final_depresi_penyakit
+	// JOIN ke tabel penyakits agar label chart menampilkan nama penyakit, bukan kode
 	var grafikDepresi []struct {
 		Kategori string `json:"kategori"`
 		Jumlah   int64  `json:"jumlah"`
 	}
-	database.DB.Model(&models.HasilDiagnosis{}).
-		Select("final_depresi_penyakit as kategori, count(*) as jumlah").
-		Group("final_depresi_penyakit").
+	database.DB.Table("hasil_diagnoses hd").
+		Select("COALESCE(p.nama_penyakit, hd.final_depresi_penyakit) as kategori, count(*) as jumlah").
+		Joins("LEFT JOIN penyakits p ON hd.final_depresi_penyakit = p.kode_penyakit").
+		Group("hd.final_depresi_penyakit, p.nama_penyakit").
 		Scan(&grafikDepresi)
 
 	// Masukkan ke grafik utama

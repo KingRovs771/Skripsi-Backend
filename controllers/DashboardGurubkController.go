@@ -71,16 +71,18 @@ func GetGurubkDashboardData(c *gin.Context) {
 		Count(&data.Stats.ButuhPerhatian)
 
 	// 4. Data Grafik - Sebaran Penyakit
+	// JOIN ke tabel penyakits agar label chart menampilkan nama penyakit, bukan kode
 	var grafikDepresi []struct {
 		Kategori string `json:"kategori"`
 		Jumlah   int64  `json:"jumlah"`
 	}
-	database.DB.Table("hasil_diagnoses").
-		Select("hasil_diagnoses.final_depresi_penyakit as kategori, count(*) as jumlah").
-		Joins("JOIN test_sessions ON hasil_diagnoses.session_test_uid = test_sessions.test_session_id").
+	database.DB.Table("hasil_diagnoses hd").
+		Select("COALESCE(p.nama_penyakit, hd.final_depresi_penyakit) as kategori, count(*) as jumlah").
+		Joins("LEFT JOIN penyakits p ON hd.final_depresi_penyakit = p.kode_penyakit").
+		Joins("JOIN test_sessions ON hd.session_test_uid = test_sessions.test_session_id").
 		Joins("JOIN students ON test_sessions.user_uid = students.students_uid").
 		Where("students.npsn = ?", teacher.NPSN).
-		Group("hasil_diagnoses.final_depresi_penyakit").
+		Group("hd.final_depresi_penyakit, p.nama_penyakit").
 		Scan(&grafikDepresi)
 
 	for _, item := range grafikDepresi {
