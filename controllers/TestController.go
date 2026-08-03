@@ -84,6 +84,43 @@ func StartTest(c *gin.Context) {
 	}
 	// ────────────────────────────────────────────────────────────────────────
 
+	// 1. Cek apakah ada sesi berjalan (status = BERJALAN)
+	var activeSession models.TestSession
+	errActive := database.DB.Where("user_uid = ? AND status = 'BERJALAN'", req.UserUID).Order("created_at DESC").First(&activeSession).Error
+	if errActive == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":              "SESSION_ACTIVE",
+			"message":            "Anda memiliki sesi tes yang sedang berjalan.",
+			"active_session_uid": activeSession.TestSessionId,
+		})
+		return
+	}
+
+	// 2. Cek cooldown 14 hari sejak tes terakhir selesai (status = SELESAI)
+	var lastSession models.TestSession
+	errLast := database.DB.Where("user_uid = ? AND status = 'SELESAI'", req.UserUID).Order("created_at DESC").First(&lastSession).Error
+	if errLast == nil {
+		cooldownDays := 14
+		nextAvailable := lastSession.CreatedAt.AddDate(0, 0, cooldownDays)
+		now := time.Now()
+
+		if now.Before(nextAvailable) {
+			daysRemaining := int(nextAvailable.Sub(now).Hours() / 24)
+			if daysRemaining < 1 {
+				daysRemaining = 1
+			}
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"status":              "COOLDOWN",
+				"error":               "COOLDOWN",
+				"message":             fmt.Sprintf("Sesi tes baru belum tersedia. Silakan tunggu %d hari lagi.", daysRemaining),
+				"last_test_date":      lastSession.CreatedAt.Format(time.RFC3339),
+				"next_available_date": nextAvailable.Format(time.RFC3339),
+				"days_remaining":      daysRemaining,
+			})
+			return
+		}
+	}
+
 	sessionID := uuid.New().String()
 	sesiBaru := models.TestSession{
 		TestSessionId:  sessionID,
@@ -265,3 +302,54 @@ func JalankanBackwardChaining(tebakanAI string, jawabanSiswa map[string]int64) (
 	}
 	return kodeSekarang, statusValidasi
 }
+
+func CheckTestStatus(c *gin.Context) {
+	userUID, exists := c.Get("user_uid")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tidak terotentikasi"})
+		return
+	}
+
+	// 1. Cek apakah ada sesi berjalan (status = BERJALAN)
+	var activeSession models.TestSession
+	errActive := database.DB.Where("user_uid = ? AND status = 'BERJALAN'", userUID).Order("created_at DESC").First(&activeSession).Error
+	if errActive == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":              "BERJALAN",
+			"active_session_uid": activeSession.TestSessionId,
+			"can_start":           false,
+		})
+		return
+	}
+
+	// 2. Cek cooldown 14 hari sejak tes terakhir selesai (status = SELESAI)
+	var lastSession models.TestSession
+	errLast := database.DB.Where("user_uid = ? AND status = 'SELESAI'", userUID).Order("created_at DESC").First(&lastSession).Error
+	if errLast == nil {
+		cooldownDays := 14
+		nextAvailable := lastSession.CreatedAt.AddDate(0, 0, cooldownDays)
+		now := time.Now()
+
+		if now.Before(nextAvailable) {
+			daysRemaining := int(nextAvailable.Sub(now).Hours() / 24)
+			if daysRemaining < 1 {
+				daysRemaining = 1
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"status":              "COOLDOWN",
+				"can_start":           false,
+				"last_test_date":      lastSession.CreatedAt.Format(time.RFC3339),
+				"next_available_date": nextAvailable.Format(time.RFC3339),
+				"days_remaining":      daysRemaining,
+			})
+			return
+		}
+	}
+
+	// 3. Jika tidak ada yang aktif & tidak cooldown
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "READY",
+		"can_start": true,
+	})
+}
+

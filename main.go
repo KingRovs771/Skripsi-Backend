@@ -249,6 +249,7 @@ func main() {
 	//Fitur Utama
 	TesDiagnosis := router.Group("/api/diagnosis")
 	TesDiagnosis.Use(middleware.RequireAuth())
+	TesDiagnosis.GET("/checkStatus", controllers.CheckTestStatus)
 	TesDiagnosis.POST("/startTes", controllers.StartTest)
 	TesDiagnosis.POST("/submitTes", controllers.SubmitTest)
 
