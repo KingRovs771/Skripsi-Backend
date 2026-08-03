@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"Skripsi-Backend/database"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -32,9 +33,12 @@ func GetStudentDiagnosisTrend(c *gin.Context) {
 		return
 	}
 
+	userTypeStr, _ := userType.(string)
+	isStudent := userTypeStr == "student" || userTypeStr == "Students"
+
 	// Proteksi UU PDP: Siswa hanya boleh mengakses data miliknya sendiri.
 	// Admin, Guru BK, dan Pakar diperbolehkan melihat data siswa mana pun.
-	if userType == "student" && userUID.(string) != studentUID {
+	if isStudent && userUID.(string) != studentUID {
 		c.JSON(http.StatusForbidden, gin.H{
 			"Status":  "Error",
 			"Message": "Akses ditolak: Anda tidak dapat melihat data tren siswa lain",
@@ -42,7 +46,12 @@ func GetStudentDiagnosisTrend(c *gin.Context) {
 		return
 	}
 
-	query := `
+	reviewedFilter := ""
+	if isStudent {
+		reviewedFilter = " AND hd.reviewed_by_gurubk = true"
+	}
+
+	query := fmt.Sprintf(`
 		SELECT
 			ts.created_at,
 			ts.total_scorephq9,
@@ -53,9 +62,9 @@ func GetStudentDiagnosisTrend(c *gin.Context) {
 		JOIN hasil_diagnoses hd   ON ts.test_session_id = hd.session_test_uid
 		LEFT JOIN penyakits p_dep ON hd.final_depresi_penyakit = p_dep.kode_penyakit
 		LEFT JOIN penyakits p_cem ON hd.final_cemas_penyakit   = p_cem.kode_penyakit
-		WHERE ts.user_uid = ? AND ts.status = 'SELESAI'
+		WHERE ts.user_uid = ? AND ts.status = 'SELESAI'%s
 		ORDER BY ts.created_at ASC
-	`
+	`, reviewedFilter)
 
 	var trendData []TrendRow
 	if err := database.DB.Raw(query, studentUID).Scan(&trendData).Error; err != nil {
