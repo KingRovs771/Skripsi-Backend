@@ -11,10 +11,15 @@ import (
 )
 
 type StudentHistorySummary struct {
-	NISN        string    `json:"nisn"`
-	Nama        string    `json:"nama"`
-	TotalTes    int64     `json:"total_tes"`
-	TerakhirTes time.Time `json:"terakhir_tes"`
+	NISN             string    `json:"nisn"`
+	Nama             string    `json:"nama"`
+	Kelas            string    `json:"kelas"`
+	TotalTes         int64     `json:"total_tes"`
+	TerakhirTes      time.Time `json:"terakhir_tes"`
+	SkorPHQ9         int64     `json:"skor_phq9"`
+	SkorGAD7         int64     `json:"skor_gad7"`
+	DepresiPenyakit  string    `json:"depresi_penyakit"`
+	CemasPenyakit    string    `json:"cemas_penyakit"`
 }
 
 type StudentInfo struct {
@@ -69,13 +74,31 @@ func GetGurubkHistory(c *gin.Context) {
 
 	var results []StudentHistorySummary
 	query := `
-		SELECT s.nisn, s.nama_lengkap as nama, 
-		       COUNT(ts.test_session_id) as total_tes, 
-		       MAX(ts.created_at) as terakhir_tes
+		SELECT
+		  s.nisn,
+		  s.nama_lengkap AS nama,
+		  s.kelas,
+		  COUNT(ts.test_session_id) AS total_tes,
+		  MAX(ts.created_at) AS terakhir_tes,
+		  last_ts.total_scorephq9 AS skor_phq9,
+		  last_ts.total_scoregad7 AS skor_gad7,
+		  p_depresi.nama_penyakit AS depresi_penyakit,
+		  p_cemas.nama_penyakit AS cemas_penyakit
 		FROM students s
-		JOIN test_sessions ts ON s.students_uid = ts.user_uid
-		WHERE s.npsn = ? AND ts.status = 'SELESAI'
-		GROUP BY s.nisn, s.nama_lengkap
+		JOIN test_sessions ts ON s.students_uid = ts.user_uid AND ts.status = 'SELESAI'
+		JOIN LATERAL (
+		  SELECT ts2.total_scorephq9, ts2.total_scoregad7, ts2.test_session_id
+		  FROM test_sessions ts2
+		  WHERE ts2.user_uid = s.students_uid AND ts2.status = 'SELESAI'
+		  ORDER BY ts2.created_at DESC
+		  LIMIT 1
+		) last_ts ON TRUE
+		JOIN hasil_diagnoses hd ON hd.session_test_uid = last_ts.test_session_id
+		LEFT JOIN penyakits p_depresi ON hd.final_depresi_penyakit = p_depresi.kode_penyakit
+		LEFT JOIN penyakits p_cemas ON hd.final_cemas_penyakit = p_cemas.kode_penyakit
+		WHERE s.npsn = ?
+		GROUP BY s.nisn, s.nama_lengkap, s.kelas, last_ts.total_scorephq9, last_ts.total_scoregad7, p_depresi.nama_penyakit, p_cemas.nama_penyakit
+		ORDER BY MAX(ts.created_at) DESC
 	`
 	if err := database.DB.Raw(query, teacherNPSN).Scan(&results).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch history"})

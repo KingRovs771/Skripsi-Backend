@@ -44,8 +44,11 @@ func main() {
 		&models.StudentFeedback{},
 		&models.Faqs{},
 		&models.BackupJob{},
-		&models.StudentConsent{},      // Fitur 1A: UU PDP consent tracking
+		&models.StudentConsent{},        // Fitur 1A: UU PDP consent tracking
 		&models.KnowledgeBaseAuditLog{}, // Fitur 3: Audit trail
+		&models.BullyReport{},           // Fitur Laporan Bully
+		&models.BullyReportAttachment{}, // Fitur Laporan Bully — lampiran foto
+		&models.StudentNotification{},   // Notifikasi in-app siswa
 	)
 	//if _ != nil {
 	//	log.Fatalf("Gagal migrasi database: %v", _)
@@ -132,6 +135,11 @@ func main() {
 	BackupRoutes.GET("/jobs",                  controllers.ListBackupJobs)
 	BackupRoutes.GET("/jobs/:job_uid",         controllers.GetBackupJobStatus)
 	BackupRoutes.GET("/download/:job_uid",     controllers.DownloadBackupFile)
+
+	// Statistik Laporan Bully — Admin
+	AdminBullyRoutes := router.Group("/api/admin/bully-reports")
+	AdminBullyRoutes.Use(middleware.RequireAuth())
+	AdminBullyRoutes.GET("/stats", controllers.GetAdminBullyStats)
 
 	//Manajemen Role
 	RoleRoutes := router.Group("/api/role")
@@ -253,6 +261,14 @@ func main() {
 	TesDiagnosis.POST("/startTes", controllers.StartTest)
 	TesDiagnosis.POST("/submitTes", controllers.SubmitTest)
 
+	// Laporan Bully — Guru BK
+	BullyGurubkRoutes := router.Group("/api/gurubk/bully-reports")
+	BullyGurubkRoutes.Use(middleware.RequireAuth())
+	BullyGurubkRoutes.GET("", controllers.GetGurubkBullyReports)
+	BullyGurubkRoutes.GET("/:report_uid", controllers.GetGurubkBullyReportDetail)
+	BullyGurubkRoutes.PATCH("/:report_uid/status", controllers.UpdateBullyReportStatus)
+	BullyGurubkRoutes.GET("/:report_uid/attachments/:id", controllers.GetBullyAttachmentGurubk)
+
 	// History Gurubk Routes
 	GurubkHistoryRoutes := router.Group("/api/gurubk/history")
 	GurubkHistoryRoutes.Use(middleware.RequireAuth())
@@ -280,6 +296,22 @@ func main() {
 	SiswaHistoryRoutes.POST("/ask-question", controllers.AskQuestion)
 	SiswaHistoryRoutes.GET("/my-questions", controllers.GetStudentQuestions)
 	SiswaHistoryRoutes.GET("/tren-diagnosis/:student_uid", controllers.GetStudentDiagnosisTrend)
+
+	// Laporan Bully — Siswa
+	BullyStudentRoutes := router.Group("/api/siswa/bully-report")
+	BullyStudentRoutes.Use(middleware.RequireAuth())
+	BullyStudentRoutes.POST("", controllers.SubmitBullyReport)
+	BullyStudentRoutes.GET("/my-reports", controllers.GetMyBullyReports)
+	BullyStudentRoutes.POST("/:report_uid/attachments", controllers.UploadBullyAttachment)
+	BullyStudentRoutes.GET("/:report_uid/attachments/:id", controllers.GetBullyAttachmentSiswa)
+
+	// Notifikasi In-App Siswa
+	NotifRoutes := router.Group("/api/siswa/notifications")
+	NotifRoutes.Use(middleware.RequireAuth())
+	NotifRoutes.GET("", controllers.GetStudentNotifications)
+	NotifRoutes.GET("/unread-count", controllers.GetUnreadNotificationCount)
+	NotifRoutes.POST("/read-all", controllers.MarkAllNotificationsRead)
+	NotifRoutes.POST("/:notif_uid/read", controllers.MarkNotificationRead)
 
 	// Consent UU PDP Routes (Fitur 1A)
 	ConsentRoutes := router.Group("/api/siswa/consent")
