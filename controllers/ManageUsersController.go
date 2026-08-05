@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -531,5 +532,42 @@ func DeleteTeachers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Data guru berhasil dihapus",
+	})
+}
+
+// ResetPasswordStudents melakukan reset password akun siswa secara terenkripsi
+func ResetPasswordStudents(c *gin.Context) {
+	uid := c.Param("uid")
+
+	var input struct {
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password minimal 6 karakter"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
+		return
+	}
+
+	db := database.DB
+	var student models.Students
+	if err := db.Where("students_uid = ?", uid).First(&student).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Siswa tidak ditemukan"})
+		return
+	}
+
+	if err := db.Model(&student).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Password siswa berhasil di-reset",
 	})
 }

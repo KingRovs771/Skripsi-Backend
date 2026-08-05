@@ -172,6 +172,7 @@ func main() {
 	UsersAdminRoutes.POST("/createStudents", controllers.CreateStudents)
 	UsersAdminRoutes.GET("/getStudentsById/:uid", controllers.GetStudentById)
 	UsersAdminRoutes.PUT("/updateStudents/:uid", controllers.UpdateStudents)
+	UsersAdminRoutes.PUT("/resetPasswordStudents/:uid", controllers.ResetPasswordStudents)
 	UsersAdminRoutes.DELETE("/deleteStudents/:uid", controllers.DeleteStudent)
 	// User Pakar
 	UsersAdminRoutes.GET("/getAllPakar", controllers.GetAllPakar)
