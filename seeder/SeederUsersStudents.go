@@ -58,9 +58,9 @@ func SeederUsersStudents() {
 	}
 	for _, student := range StudentSeeder {
 		if err := database.DB.Create(&student).Error; err != nil {
-			log.Fatal("❌ Gagal membuat user %s: %v", student.NamaLengkap)
+			log.Fatalf("❌ Gagal membuat user %s: %v", student.NamaLengkap, err)
 		}
-		log.Println("✅ User dibuat: %s (%s)", student.NamaLengkap, student.StudentsUID)
+		log.Printf("✅ User dibuat: %s (%s)\n", student.NamaLengkap, student.StudentsUID)
 	}
 	log.Println("🌱 Seeder users berhasil dijalankan!")
 }

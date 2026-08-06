@@ -4,16 +4,19 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type DraftAturanInput struct {
-	KodePenyakit   string `json:"kode_penyakit" binding:"required"`
-	KodePertanyaan string `json:"kode_pertanyaan" binding:"required"`
-	MinValue       int64  `json:"min_value"`
-	IsMandatory    int64  `json:"is_mandatory"`
+	KodePenyakit             string `json:"kode_penyakit" binding:"required"`
+	KodePertanyaan           string `json:"kode_pertanyaan" binding:"required"`
+	MinValue                 int64  `json:"min_value"`
+	IsMandatory              int64  `json:"is_mandatory"`
+	TipeAturan               string `json:"tipe_aturan"`
+	BerlakuUntukSemuaTingkat bool   `json:"berlaku_untuk_semua_tingkat"`
 }
 
 type SimulationRequest struct {
@@ -74,11 +77,17 @@ func SimulateRules(c *gin.Context) {
 	// Group draft rules by disease code for quick override lookup
 	draftMap := make(map[string][]models.Aturan)
 	for _, rule := range req.DraftRules {
+		tipe := rule.TipeAturan
+		if tipe == "" {
+			tipe = "GEJALA_INTI"
+		}
 		draftMap[rule.KodePenyakit] = append(draftMap[rule.KodePenyakit], models.Aturan{
-			KodePenyakit:   rule.KodePenyakit,
-			KodePertanyaan: rule.KodePertanyaan,
-			MinValue:       rule.MinValue,
-			IsMandatory:    rule.IsMandatory,
+			KodePenyakit:             rule.KodePenyakit,
+			KodePertanyaan:           rule.KodePertanyaan,
+			MinValue:                 rule.MinValue,
+			IsMandatory:              rule.IsMandatory,
+			TipeAturan:               tipe,
+			BerlakuUntukSemuaTingkat: rule.BerlakuUntukSemuaTingkat,
 		})
 	}
 
@@ -107,13 +116,6 @@ func SimulateRules(c *gin.Context) {
 		// Jalankan Backward Chaining Simulasi (Depresi & Cemas)
 		simDepresi := JalankanBackwardChainingSimulasi(originalResult.NNDepresiPrediksi, jawabanMap, draftMap)
 		simCemas := JalankanBackwardChainingSimulasi(originalResult.NNCemasPrediksi, jawabanMap, draftMap)
-
-		// Terapkan G09 Urgent Intervention rule konsisten dengan logic asli
-		if jawabanMap["G09"] >= 1 {
-			if simDepresi == "P01" || simDepresi == "P02" || simDepresi == "P03" {
-				simDepresi = "P04"
-			}
-		}
 
 		isDiff := simDepresi != originalResult.FinalDepresiPenyakit || simCemas != originalResult.FinalCemasPenyakit
 		if isDiff {
@@ -147,7 +149,40 @@ func SimulateRules(c *gin.Context) {
 // JalankanBackwardChainingSimulasi melakukan inferensi backward chaining dengan mensubstitusi
 // aturan dari database dengan aturan draf dari pakar jika ada.
 func JalankanBackwardChainingSimulasi(tebakanAI string, jawabanSiswa map[string]int64, draftMap map[string][]models.Aturan) string {
+	isDepresi := strings.HasPrefix(tebakanAI, "P")
+
+	// Hitung total skor dari jawabanSiswa
+	var totalScore int64 = 0
+	for qCode, val := range jawabanSiswa {
+		if isDepresi && strings.HasPrefix(qCode, "G") {
+			totalScore += val
+		} else if !isDepresi && strings.HasPrefix(qCode, "D") {
+			totalScore += val
+		}
+	}
+
 	kodeSekarang := tebakanAI
+
+	// Cek Red Flag (independen dari hipotesis yang sedang diuji)
+	var redFlags []models.Aturan
+	if overrideRF, ok := draftMap["ALL"]; ok {
+		redFlags = overrideRF
+	} else {
+		database.DB.Where("tipe_aturan = ?", "RED_FLAG").Find(&redFlags)
+	}
+
+	redFlagTriggered := false
+	for _, rf := range redFlags {
+		if jawabanSiswa[rf.KodePertanyaan] >= rf.MinValue {
+			redFlagTriggered = true
+			break
+		}
+	}
+
+	// Jika ada Red Flag dan ini adalah depresi, paksa ke P05
+	if redFlagTriggered && isDepresi {
+		return "P05"
+	}
 
 	for kodeSekarang != "" {
 		var rules []models.Aturan
@@ -159,30 +194,45 @@ func JalankanBackwardChainingSimulasi(tebakanAI string, jawabanSiswa map[string]
 			break
 		}
 
-		// 2. Ambil aturan: gunakan draft jika ada override, jika tidak ambil dari database
-		if overrideRules, ok := draftMap[kodeSekarang]; ok {
-			rules = overrideRules
-		} else {
-			database.DB.Where("kode_penyakit = ?", kodeSekarang).Find(&rules)
-		}
-
-		syaratTerpenuhi := true
-		for _, aturan := range rules {
-			if aturan.IsMandatory == 1 && jawabanSiswa[aturan.KodePertanyaan] < aturan.MinValue {
-				syaratTerpenuhi = false
-				break
+		// Lapisan 1: Validasi Rentang Skor
+		lapisan1Lolos := true
+		if penyakit.MinSkor != nil && penyakit.MaxSkor != nil {
+			if totalScore < *penyakit.MinSkor || totalScore > *penyakit.MaxSkor {
+				lapisan1Lolos = false
 			}
 		}
 
-		if syaratTerpenuhi {
+		// Lapisan 2: Validasi Gejala Inti
+		lapisan2Lolos := true
+		if lapisan1Lolos {
+			// 2. Ambil aturan: gunakan draft jika ada override, jika tidak ambil dari database
+			if overrideRules, ok := draftMap[kodeSekarang]; ok {
+				rules = overrideRules
+			} else {
+				database.DB.Where("kode_penyakit = ?", kodeSekarang).Find(&rules)
+			}
+
+			for _, aturan := range rules {
+				if aturan.TipeAturan == "GEJALA_INTI" && aturan.IsMandatory == 1 {
+					if jawabanSiswa[aturan.KodePertanyaan] < aturan.MinValue {
+						lapisan2Lolos = false
+						break
+					}
+				}
+			}
+		}
+
+		if lapisan1Lolos && lapisan2Lolos {
 			return kodeSekarang
 		}
 
+		// Backtrack
 		if penyakit.KodeTurunan != "" {
 			kodeSekarang = penyakit.KodeTurunan
 		} else {
 			return kodeSekarang
 		}
 	}
+
 	return kodeSekarang
 }

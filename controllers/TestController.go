@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -242,13 +243,6 @@ func SubmitTest(c *gin.Context) {
 	finalDepresi, statusDepresi := JalankanBackwardChaining(aiDepresiKode, jawabanMap)
 	finalCemas, statusCemas := JalankanBackwardChaining(aiCemasKode, jawabanMap)
 
-	if jawabanMap["G09"] >= 1 {
-		statusDepresi = "URGENT_INTERVENTION"
-		if finalDepresi == "P01" || finalDepresi == "P02" || finalDepresi == "P03" {
-			finalDepresi = "P04"
-		}
-	}
-
 	database.DB.Create(&models.HasilDiagnosis{
 		ResultUID:             uuid.New().String(),
 		SessionTestUID:        req.SessionID,
@@ -269,30 +263,72 @@ func SubmitTest(c *gin.Context) {
 		"session_id": req.SessionID,
 	})
 }
+
 func JalankanBackwardChaining(tebakanAI string, jawabanSiswa map[string]int64) (string, string) {
+	isDepresi := strings.HasPrefix(tebakanAI, "P")
+
+	// Hitung total skor dari jawabanSiswa
+	var totalScore int64 = 0
+	for qCode, val := range jawabanSiswa {
+		if isDepresi && strings.HasPrefix(qCode, "G") {
+			totalScore += val
+		} else if !isDepresi && strings.HasPrefix(qCode, "D") {
+			totalScore += val
+		}
+	}
+
 	kodeSekarang := tebakanAI
 	statusValidasi := "CONFIRMED"
 
+	// Cek Red Flag (independen dari hipotesis yang sedang diuji)
+	var redFlags []models.Aturan
+	database.DB.Where("tipe_aturan = ?", "RED_FLAG").Find(&redFlags)
+	redFlagTriggered := false
+	for _, rf := range redFlags {
+		if jawabanSiswa[rf.KodePertanyaan] >= rf.MinValue {
+			redFlagTriggered = true
+			break
+		}
+	}
+
+	// Jika ada Red Flag dan ini adalah depresi, paksa ke P05 dengan status URGENT_INTERVENTION
+	if redFlagTriggered && isDepresi {
+		return "P05", "URGENT_INTERVENTION"
+	}
+
 	for kodeSekarang != "" {
 		var penyakit models.Penyakit
-		// Akses DB global
 		err := database.DB.Preload("DaftarAturan").Where("kode_penyakit = ?", kodeSekarang).First(&penyakit).Error
 		if err != nil {
 			break
 		}
 
-		syaratTerpenuhi := true
-		for _, aturan := range penyakit.DaftarAturan {
-			if aturan.IsMandatory == 1 && jawabanSiswa[aturan.KodePertanyaan] < aturan.MinValue {
-				syaratTerpenuhi = false
-				break
+		// Lapisan 1: Validasi Rentang Skor
+		lapisan1Lolos := true
+		if penyakit.MinSkor != nil && penyakit.MaxSkor != nil {
+			if totalScore < *penyakit.MinSkor || totalScore > *penyakit.MaxSkor {
+				lapisan1Lolos = false
 			}
 		}
 
-		if syaratTerpenuhi {
+		// Lapisan 2: Validasi Gejala Inti
+		lapisan2Lolos := true
+		if lapisan1Lolos {
+			for _, aturan := range penyakit.DaftarAturan {
+				if aturan.TipeAturan == "GEJALA_INTI" && aturan.IsMandatory == 1 {
+					if jawabanSiswa[aturan.KodePertanyaan] < aturan.MinValue {
+						lapisan2Lolos = false
+						break
+					}
+				}
+			}
+		}
+
+		if lapisan1Lolos && lapisan2Lolos {
 			return kodeSekarang, statusValidasi
 		}
 
+		// Backtrack
 		if penyakit.KodeTurunan != "" {
 			kodeSekarang = penyakit.KodeTurunan
 			statusValidasi = "ADJUSTED"
@@ -300,6 +336,7 @@ func JalankanBackwardChaining(tebakanAI string, jawabanSiswa map[string]int64) (
 			return kodeSekarang, "ADJUSTED"
 		}
 	}
+
 	return kodeSekarang, statusValidasi
 }
 
@@ -350,6 +387,57 @@ func CheckTestStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "READY",
 		"can_start": true,
+	})
+}
+
+// RecomputeHistoricalDiagnoses menghitung ulang seluruh diagnosis historis menggunakan model inferensi 2-layer baru
+func RecomputeHistoricalDiagnoses(c *gin.Context) {
+	var results []models.HasilDiagnosis
+	if err := database.DB.Find(&results).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data historis"})
+		return
+	}
+
+	updatedCount := 0
+	for _, res := range results {
+		// Ambil semua jawaban untuk sesi ini
+		var answers []models.TestAnswer
+		if err := database.DB.Where("test_session_uid = ?", res.SessionTestUID).Find(&answers).Error; err != nil {
+			continue
+		}
+
+		// Bangun map jawaban
+		jawabanMap := make(map[string]int64)
+		for _, ans := range answers {
+			jawabanMap[ans.KodePertanyaan] = ans.NilaiJawaban
+		}
+
+		// Hitung ulang dengan logic baru
+		newDepresi, statusDepresi := JalankanBackwardChaining(res.NNDepresiPrediksi, jawabanMap)
+		newCemas, statusCemas := JalankanBackwardChaining(res.NNCemasPrediksi, jawabanMap)
+
+		// Cek jika ada perubahan
+		isChanged := newDepresi != res.FinalDepresiPenyakit ||
+			statusDepresi != res.StatusValidasiDepresi ||
+			newCemas != res.FinalCemasPenyakit ||
+			statusCemas != res.StatusValidasiCemas
+
+		if isChanged {
+			database.DB.Model(&res).Updates(map[string]interface{}{
+				"final_depresi_penyakit":  newDepresi,
+				"status_validasi_depresi": statusDepresi,
+				"final_cemas_penyakit":    newCemas,
+				"status_validasi_cemas":   statusCemas,
+			})
+			updatedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":        http.StatusOK,
+		"message":       "Rekalkulasi diagnosis historis selesai",
+		"total_records": len(results),
+		"total_updated": updatedCount,
 	})
 }
 

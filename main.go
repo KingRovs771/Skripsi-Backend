@@ -59,6 +59,7 @@ func main() {
 	seeder.SeederSekolah()
 	seeder.SeederUsersAdministrator()
 	seeder.SeederCategories()
+	seeder.SeederPenyakitAturan()
 
 	router := gin.Default()
 
@@ -140,6 +141,11 @@ func main() {
 	AdminBullyRoutes := router.Group("/api/admin/bully-reports")
 	AdminBullyRoutes.Use(middleware.RequireAuth())
 	AdminBullyRoutes.GET("/stats", controllers.GetAdminBullyStats)
+
+	// Manajemen Diagnoses — Admin
+	AdminDiagnosesRoutes := router.Group("/api/admin/diagnoses")
+	AdminDiagnosesRoutes.Use(middleware.RequireAuth())
+	AdminDiagnosesRoutes.POST("/recompute-history", controllers.RecomputeHistoricalDiagnoses)
 
 	//Manajemen Role
 	RoleRoutes := router.Group("/api/role")

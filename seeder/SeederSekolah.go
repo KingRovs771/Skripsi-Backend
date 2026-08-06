@@ -93,8 +93,8 @@ func SeederSekolah() {
 
 	for _, sekolah := range SekolahSeeder {
 		if err := database.DB.Create(&sekolah).Error; err != nil {
-			log.Fatal("❌ Gagal membuat Sekolah %s: %v", sekolah.NamaSekolah)
+			log.Fatalf("❌ Gagal membuat Sekolah %s: %v", sekolah.NamaSekolah, err)
 		}
-		log.Println("✅ Sekolah dibuat: %s (%s)", sekolah.NamaSekolah, sekolah.NPSN)
+		log.Printf("✅ Sekolah dibuat: %s (%v)\n", sekolah.NamaSekolah, sekolah.NPSN)
 	}
 }

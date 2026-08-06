@@ -18,6 +18,8 @@ type Penyakit struct {
 	KodeTurunan     string    `gorm:"type:varchar(30)" json:"kode_turunan"`
 	Description     string    `gorm:"type:text" json:"description"`
 	SaranPenanganan string    `gorm:"type:text" json:"saran_penanganan"`
+	MinSkor         *int64    `gorm:"type:integer" json:"min_skor"`
+	MaxSkor         *int64    `gorm:"type:integer" json:"max_skor"`
 	CreatedAt       time.Time `gorm:"type:timestamp" json:"created_at"`
 	UpdateAt        time.Time `gorm:"type:timestamp" json:"update_at"`
 

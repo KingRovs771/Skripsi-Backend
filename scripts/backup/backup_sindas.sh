@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # =============================================================================
 # backup_sindas.sh — Skrip Backup PostgreSQL untuk Sistem SINDAS
 # =============================================================================
@@ -21,10 +21,11 @@ set -euo pipefail
 
 # ─── Konfigurasi — SESUAIKAN dengan environment Anda ─────────────────────────
 
-DB_HOST="localhost"
-DB_PORT="5432"
-DB_NAME="sindas_db"        # Nama database PostgreSQL Anda
-DB_USER="postgres"          # User PostgreSQL
+DB_HOST="${SINDAS_DB_HOST:-localhost}"
+DB_PORT="${SINDAS_DB_PORT:-5432}"
+DB_NAME="${SINDAS_DB_NAME:-sindas_db}"   # Nama database PostgreSQL Anda
+DB_USER="${SINDAS_DB_USER:-postgres}"    # User PostgreSQL
+DB_PASS="${SINDAS_DB_PASS:-}"            # Password — kosong jika pakai peer/trust auth
 
 BACKUP_DIR="/var/backups/sindas"
 LOG_FILE="/var/log/sindas_backup.log"
@@ -91,11 +92,16 @@ update_job_status() {
     sql="UPDATE backup_jobs SET status = 'FAILED', finished_at = NOW(), error_message = '$escaped_error_msg' WHERE job_uid = '$JOB_ID';"
   fi
 
-  # Nonaktifkan ERR trap sementara agar tidak looping
+  if [[ -z "$sql" ]]; then
+    return 0
+  fi
+
+  # Nonaktifkan ERR trap sementara agar tidak looping jika psql gagal
   trap - ERR
   set +e
 
-  PGPASSWORD="" PGPASSFILE="" \
+  # Gunakan PGPASSWORD dari env var SINDAS_DB_PASS jika tersedia
+  PGPASSWORD="${DB_PASS:-}" PGPASSFILE="" \
     psql \
       -h "$DB_HOST" \
       -p "$DB_PORT" \
@@ -103,7 +109,7 @@ update_job_status() {
       -d "$DB_NAME" \
       -c "$sql" \
       -X \
-      -t 2>>"$LOG_FILE" || log "WARNING" "Gagal mengupdate database via psql"
+      -t 2>>"$LOG_FILE" || log "WARNING" "Gagal mengupdate database via psql — Go goroutine akan mendeteksi dan menangani ini"
 
   set -e
   trap 'on_error $LINENO' ERR
@@ -137,8 +143,8 @@ TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 DUMP_FILE="$SUBDIR/backup_sindas_${BACKUP_TYPE}_${TIMESTAMP}.dump"
 ENCRYPTED_FILE="${DUMP_FILE}.gpg"
 
-# Update status ke RUNNING
-update_job_status "RUNNING"
+# CATATAN: Status RUNNING sudah di-set oleh Go goroutine sebelum script ini dipanggil.
+# Script bash hanya perlu mengupdate SUCCESS atau FAILED di akhir.
 
 # ─── Cek prasyarat ───────────────────────────────────────────────────────────
 
@@ -170,7 +176,7 @@ START_TIME="$(date +%s)"
 # pg_dump dengan format custom (-Fc):
 log "INFO" "Menjalankan pg_dump..."
 
-PGPASSWORD="" PGPASSFILE="" \
+PGPASSWORD="${DB_PASS:-}" PGPASSFILE="" \
   pg_dump \
     --host="$DB_HOST" \
     --port="$DB_PORT" \
@@ -178,7 +184,6 @@ PGPASSWORD="" PGPASSFILE="" \
     --dbname="$DB_NAME" \
     --format=custom \
     --compress=9 \
-    --no-password \
     --file="$DUMP_FILE" 2>>"$LOG_FILE"
 
 DUMP_SIZE="$(du -sh "$DUMP_FILE" | cut -f1)"

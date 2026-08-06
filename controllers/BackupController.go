@@ -59,17 +59,30 @@ func TriggerBackup(c *gin.Context) {
 		return
 	}
 
-	// ── Rate limit 1: ada PENDING/RUNNING dalam 1 jam terakhir? ──────────────
-	var runningCount int64
-	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	// ── Auto-cleanup: Reset PENDING/RUNNING yang terbengkalai > 30 menit ──────
+	// Ini mencegah rate-limit "racun" akibat proses yang mati tanpa cleanup DB
+	staleCutoff := time.Now().Add(-30 * time.Minute)
+	staleMsg := "Otomatis dibatalkan: timeout 30 menit"
+	finishTime := time.Now()
 	database.DB.Model(&models.BackupJob{}).
-		Where("status IN ('PENDING','RUNNING') AND created_at >= ?", oneHourAgo).
+		Where("status IN ('PENDING','RUNNING') AND created_at < ?", staleCutoff).
+		Updates(map[string]interface{}{
+			"status":        "FAILED",
+			"error_message": staleMsg,
+			"finished_at":   finishTime,
+		})
+
+	// ── Rate limit 1: ada PENDING/RUNNING dalam 15 menit terakhir? ────────────
+	var runningCount int64
+	fifteenMinAgo := time.Now().Add(-15 * time.Minute)
+	database.DB.Model(&models.BackupJob{}).
+		Where("status IN ('PENDING','RUNNING') AND created_at >= ?", fifteenMinAgo).
 		Count(&runningCount)
 
 	if runningCount > 0 {
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"Status":  "Error",
-			"Message": "Backup sedang berjalan atau baru saja dipicu, coba lagi nanti (cooldown 1 jam)",
+			"Message": "Backup sedang berjalan atau baru saja dipicu, coba lagi nanti (cooldown 15 menit)",
 		})
 		return
 	}
@@ -108,6 +121,18 @@ func TriggerBackup(c *gin.Context) {
 		return
 	}
 
+	// ── Helper: tandai job sebagai FAILED di DB ────────────────────────────────
+	markFailed := func(jobUID, reason string) {
+		now := time.Now()
+		database.DB.Model(&models.BackupJob{}).
+			Where("job_uid = ?", jobUID).
+			Updates(map[string]interface{}{
+				"status":        "FAILED",
+				"error_message": reason,
+				"finished_at":   now,
+			})
+	}
+
 	// ── Jalankan skrip backup di background (non-blocking) ────────────────────
 	if runtime.GOOS == "windows" {
 		// Mock Mode untuk testing di Windows lokal tanpa bash/Linux toolchain
@@ -134,10 +159,10 @@ func TriggerBackup(c *gin.Context) {
 			database.DB.Model(&models.BackupJob{}).
 				Where("job_uid = ?", jobUID).
 				Updates(map[string]interface{}{
-					"status":        "SUCCESS",
-					"file_path":     dummyPath,
-					"file_size":     "12 KB",
-					"finished_at":   finishTime,
+					"status":      "SUCCESS",
+					"file_path":   dummyPath,
+					"file_size":   "12 KB",
+					"finished_at": finishTime,
 				})
 		}(jobUID, req.Type)
 
@@ -153,35 +178,54 @@ func TriggerBackup(c *gin.Context) {
 		return
 	}
 
+	// ── Linux/VPS: jalankan bash script di goroutine bertracking ──────────────
 	scriptPath := backupScriptPath()
-	jobIDArg := "--job-id=" + jobUID
-	cmd := exec.Command("bash", scriptPath, req.Type, jobIDArg)
-
-	// Arahkan stdout/stderr skrip ke file log — bukan blocking
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-
-	if err := cmd.Start(); err != nil {
-		// Gagal spawn proses — update status jadi FAILED langsung
-		errMsg := "Gagal memulai proses backup: " + err.Error()
-		now := time.Now()
+	go func(jobUID, scriptPath, backupType string) {
+		// Update ke RUNNING
+		startTime := time.Now()
 		database.DB.Model(&models.BackupJob{}).
 			Where("job_uid = ?", jobUID).
 			Updates(map[string]interface{}{
-				"status":        "FAILED",
-				"error_message": errMsg,
-				"finished_at":   now,
+				"status":     "RUNNING",
+				"started_at": startTime,
 			})
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"Status":  "Error",
-			"Message": errMsg,
-		})
-		return
-	}
+		jobIDArg := "--job-id=" + jobUID
+		cmd := exec.Command("bash", scriptPath, backupType, jobIDArg)
+		cmd.Stdout = nil
+		cmd.Stderr = nil
 
-	// Lepas proses dari parent agar tidak mati saat request selesai
-	_ = cmd.Process.Release()
+		// Timeout 30 menit
+		done := make(chan error, 1)
+		if err := cmd.Start(); err != nil {
+			markFailed(jobUID, "Gagal memulai proses backup: "+err.Error())
+			return
+		}
+
+		go func() { done <- cmd.Wait() }()
+
+		timeout := time.After(30 * time.Minute)
+		select {
+		case err := <-done:
+			if err != nil {
+				markFailed(jobUID, "Proses backup keluar dengan error: "+err.Error())
+			}
+			// Jika sukses, skrip bash seharusnya sudah update DB sendiri.
+			// Namun jika status masih RUNNING (skrip tidak update), tandai FAILED.
+			var current models.BackupJob
+			if dbErr := database.DB.Where("job_uid = ?", jobUID).First(&current).Error; dbErr == nil {
+				if current.Status == "RUNNING" {
+					markFailed(jobUID, "Skrip backup selesai tapi tidak memperbarui status database")
+				}
+			}
+		case <-timeout:
+			// Kill proses yang overtime
+			if cmd.Process != nil {
+				_ = cmd.Process.Kill()
+			}
+			markFailed(jobUID, "Timeout: proses backup melebihi batas waktu 30 menit")
+		}
+	}(jobUID, scriptPath, req.Type)
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"Status":  "Accepted",

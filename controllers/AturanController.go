@@ -28,11 +28,13 @@ func GetAllAturan(c *gin.Context) {
 }
 func SaveAturan(c *gin.Context) {
 	var InputAturan struct {
-		AturanUID      string `json:"aturan_uid"`
-		KodePenyakit   string `json:"kode_penyakit" binding:"required"`
-		KodePertanyaan string `json:"kode_pertanyaan" binding:"required"`
-		MinValue       int64  `json:"min_value"`
-		IsMandatory    int64  `json:"is_mandatory"`
+		AturanUID                string `json:"aturan_uid"`
+		KodePenyakit             string `json:"kode_penyakit" binding:"required"`
+		KodePertanyaan           string `json:"kode_pertanyaan" binding:"required"`
+		MinValue                 int64  `json:"min_value"`
+		IsMandatory              int64  `json:"is_mandatory"`
+		TipeAturan               string `json:"tipe_aturan"`
+		BerlakuUntukSemuaTingkat bool   `json:"berlaku_untuk_semua_tingkat"`
 	}
 
 	if err := c.ShouldBindJSON(&InputAturan); err != nil {
@@ -43,12 +45,20 @@ func SaveAturan(c *gin.Context) {
 		})
 		return
 	}
+
+	tipe := InputAturan.TipeAturan
+	if tipe == "" {
+		tipe = "GEJALA_INTI"
+	}
+
 	aturan := models.Aturan{
-		AturanUID:      InputAturan.AturanUID,
-		KodePenyakit:   InputAturan.KodePenyakit,
-		KodePertanyaan: InputAturan.KodePertanyaan,
-		MinValue:       InputAturan.MinValue,
-		IsMandatory:    InputAturan.IsMandatory,
+		AturanUID:                InputAturan.AturanUID,
+		KodePenyakit:             InputAturan.KodePenyakit,
+		KodePertanyaan:           InputAturan.KodePertanyaan,
+		MinValue:                 InputAturan.MinValue,
+		IsMandatory:              InputAturan.IsMandatory,
+		TipeAturan:               tipe,
+		BerlakuUntukSemuaTingkat: InputAturan.BerlakuUntukSemuaTingkat,
 	}
 
 	result, err := aturan.SaveAturan()
@@ -90,10 +100,12 @@ func UpdateAturan(c *gin.Context) {
 	uid := c.Param("uid")
 
 	var InputAturan struct {
-		KodePenyakit   string `json:"kode_penyakit" binding:"required"`
-		KodePertanyaan string `json:"kode_pertanyaan" binding:"required"`
-		MinValue       int64  `json:"min_value"`
-		IsMandatory    int64  `json:"is_mandatory"`
+		KodePenyakit             string `json:"kode_penyakit" binding:"required"`
+		KodePertanyaan           string `json:"kode_pertanyaan" binding:"required"`
+		MinValue                 int64  `json:"min_value"`
+		IsMandatory              int64  `json:"is_mandatory"`
+		TipeAturan               string `json:"tipe_aturan"`
+		BerlakuUntukSemuaTingkat bool   `json:"berlaku_untuk_semua_tingkat"`
 	}
 
 	if err := c.ShouldBindJSON(&InputAturan); err != nil {
@@ -134,6 +146,13 @@ func UpdateAturan(c *gin.Context) {
 	if InputAturan.IsMandatory != aturan.IsMandatory {
 		aturan.IsMandatory = InputAturan.IsMandatory
 	}
+
+	tipe := InputAturan.TipeAturan
+	if tipe == "" {
+		tipe = "GEJALA_INTI"
+	}
+	aturan.TipeAturan = tipe
+	aturan.BerlakuUntukSemuaTingkat = InputAturan.BerlakuUntukSemuaTingkat
 
 	if err := aturan.UpdateAturan(uid); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

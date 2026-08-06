@@ -43,9 +43,9 @@ func SeederUsersAdministrator() {
 
 	for _, admin := range SeederAdministrator {
 		if err := database.DB.Create(&admin).Error; err != nil {
-			log.Fatal("❌ Gagal membuat Users %s: %v", admin.NamaLengkap)
+			log.Fatalf("❌ Gagal membuat Users %s: %v", admin.NamaLengkap, err)
 		}
-		log.Println("✅ Users Admin dibuat: %s (%s)", admin.NamaLengkap, admin.AdminUID)
+		log.Printf("✅ Users Admin dibuat: %s (%s)\n", admin.NamaLengkap, admin.AdminUID)
 	}
 
 	log.Println("🌱 Seeder users berhasil dijalankan!")

@@ -11,14 +11,16 @@ import (
 )
 
 type Aturan struct {
-	AturanID       int64     `gorm:"primaryKey;autoIncrement" json:"aturan_id"`
-	AturanUID      string    `gorm:"type:varchar(255);uniqueIndex" json:"aturan_uid"`
-	KodePenyakit   string    `gorm:"type:varchar(255)" json:"kode_penyakit"`
-	KodePertanyaan string    `gorm:"type:varchar(255)" json:"kode_pertanyaan"`
-	MinValue       int64     `gorm:"type:bigint" json:"min_value"`
-	IsMandatory    int64     `gorm:"type:bigint" json:"is_mandatory"`
-	CreatedAt      time.Time `gorm:"type:timestamp" json:"created_at"`
-	UpdateAt       time.Time `gorm:"type:timestamp" json:"update_at"`
+	AturanID                 int64     `gorm:"primaryKey;autoIncrement" json:"aturan_id"`
+	AturanUID                string    `gorm:"type:varchar(255);uniqueIndex" json:"aturan_uid"`
+	KodePenyakit             string    `gorm:"type:varchar(255)" json:"kode_penyakit"`
+	KodePertanyaan           string    `gorm:"type:varchar(255)" json:"kode_pertanyaan"`
+	MinValue                 int64     `gorm:"type:bigint" json:"min_value"`
+	IsMandatory              int64     `gorm:"type:bigint" json:"is_mandatory"`
+	TipeAturan               string    `gorm:"type:varchar(50);default:'GEJALA_INTI'" json:"tipe_aturan"`
+	BerlakuUntukSemuaTingkat bool      `gorm:"type:boolean;default:false" json:"berlaku_untuk_semua_tingkat"`
+	CreatedAt                time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdateAt                 time.Time `gorm:"type:timestamp" json:"update_at"`
 }
 
 func (a *Aturan) BeforeCreate(db *gorm.DB) error {
@@ -69,7 +71,7 @@ func GetAturanByUID(uid string) (Aturan, error) {
 }
 
 func (a *Aturan) UpdateAturan(uid string) error {
-	err := database.DB.Where("aturan_uid = ?", uid).Select("KodePenyakit", "KodePertanyaan", "MinValue", "IsMandatory", "UpdateAt").Updates(a).Error
+	err := database.DB.Where("aturan_uid = ?", uid).Select("KodePenyakit", "KodePertanyaan", "MinValue", "IsMandatory", "TipeAturan", "BerlakuUntukSemuaTingkat", "UpdateAt").Updates(a).Error
 	return err
 }
 
