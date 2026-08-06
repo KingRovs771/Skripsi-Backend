@@ -17,6 +17,15 @@ type SekolahBinaanResponse struct {
 	TotalSiswa      int64  `json:"total_siswa"`
 	TotalTesSelesai int64  `json:"total_tes_selesai"`
 	ButuhPerhatian  int64  `json:"butuh_perhatian"`
+	// Severity breakdown
+	DepresiNormal   int64  `json:"depresi_normal"`
+	DepresiRingan   int64  `json:"depresi_ringan"`
+	DepresiSedang   int64  `json:"depresi_sedang"`
+	DepresiBerat    int64  `json:"depresi_berat"`
+	CemasNormal     int64  `json:"cemas_normal"`
+	CemasRingan     int64  `json:"cemas_ringan"`
+	CemasSedang     int64  `json:"cemas_sedang"`
+	CemasBerat      int64  `json:"cemas_berat"`
 }
 
 func GetPakarSekolahBinaan(c *gin.Context) {
@@ -65,7 +74,39 @@ func GetPakarSekolahBinaan(c *gin.Context) {
 			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
 			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
 			 JOIN students stu ON ts.user_uid = stu.students_uid
-			 WHERE stu.npsn::text = s.npsn::text AND (hd.nn_depresi_confidence > 75 OR hd.nn_cemas_confidence > 75)), 0) as butuh_perhatian
+			 WHERE stu.npsn::text = s.npsn::text AND (hd.nn_depresi_confidence > 75 OR hd.nn_cemas_confidence > 75)), 0) as butuh_perhatian,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_depresi_penyakit LIKE '%01'), 0) as depresi_normal,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_depresi_penyakit LIKE '%02'), 0) as depresi_ringan,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_depresi_penyakit LIKE '%03'), 0) as depresi_sedang,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_depresi_penyakit LIKE '%04'), 0) as depresi_berat,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_cemas_penyakit LIKE '%01'), 0) as cemas_normal,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_cemas_penyakit LIKE '%02'), 0) as cemas_ringan,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_cemas_penyakit LIKE '%03'), 0) as cemas_sedang,
+			COALESCE((SELECT COUNT(*) FROM hasil_diagnoses hd 
+			 JOIN test_sessions ts ON hd.session_test_uid = ts.test_session_id
+			 JOIN students stu ON ts.user_uid = stu.students_uid
+			 WHERE stu.npsn::text = s.npsn::text AND hd.final_cemas_penyakit LIKE '%04'), 0) as cemas_berat
 		FROM sekolahs s
 		WHERE s.pakar_uid = ?
 	`
