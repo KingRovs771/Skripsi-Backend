@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"Skripsi-Backend/crypto"
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
@@ -150,6 +151,16 @@ func GetGurubkHistoryDetail(c *gin.Context) {
 		return
 	}
 
+	// Dekripsi cerita_siswa dan rekomendasi karena dibaca via raw SQL query scan (hooks AfterFind tidak trigger)
+	for i := range results {
+		if decrypted, err := crypto.DecryptField(results[i].CeritaSiswa); err == nil {
+			results[i].CeritaSiswa = decrypted
+		}
+		if decrypted, err := crypto.DecryptField(results[i].Rekomendasi); err == nil {
+			results[i].Rekomendasi = decrypted
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"Data": gin.H{
 			"student": studentInfo,
@@ -166,10 +177,17 @@ func UpdateHistoryReview(c *gin.Context) {
 		return
 	}
 
+	// Enkripsi rekomendasi secara manual karena updates dengan map tidak men-trigger GORM BeforeSave/BeforeUpdate hooks
+	encryptedRekomendasi, err := crypto.EncryptField(req.Rekomendasi)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi rekomendasi"})
+		return
+	}
+
 	if err := database.DB.Model(&models.HasilDiagnosis{}).Where("result_id = ?", resultId).Updates(map[string]interface{}{
 		"is_visible_to_student": req.IsVisibleToStudent,
 		"reviewed_by_gurubk":    req.ReviewedByGurubk,
-		"rekomendasi":           req.Rekomendasi,
+		"rekomendasi":           encryptedRekomendasi,
 	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal update status"})
 		return
@@ -216,6 +234,16 @@ func GetStudentHistory(c *gin.Context) {
 	if err := database.DB.Raw(query, studentUID).Scan(&results).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Dekripsi cerita_siswa dan rekomendasi untuk siswa
+	for i := range results {
+		if decrypted, err := crypto.DecryptField(results[i].CeritaSiswa); err == nil {
+			results[i].CeritaSiswa = decrypted
+		}
+		if decrypted, err := crypto.DecryptField(results[i].Rekomendasi); err == nil {
+			results[i].Rekomendasi = decrypted
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
