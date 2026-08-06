@@ -158,9 +158,17 @@ if ! command -v gpg &>/dev/null; then
   exit 1
 fi
 
+# Fallback: jika file passphrase tidak ada tetapi env var SINDAS_GPG_PASSPHRASE diset
+if [[ ! -f "$GPG_PASSPHRASE_FILE" && -n "${SINDAS_GPG_PASSPHRASE:-}" ]]; then
+  log "INFO" "File GPG passphrase tidak ditemukan. Membuat file temporer dari env SINDAS_GPG_PASSPHRASE..."
+  mkdir -p "$(dirname "$GPG_PASSPHRASE_FILE")" 2>/dev/null || GPG_PASSPHRASE_FILE="/tmp/gpg_passphrase"
+  echo "$SINDAS_GPG_PASSPHRASE" > "$GPG_PASSPHRASE_FILE"
+  chmod 600 "$GPG_PASSPHRASE_FILE"
+fi
+
 if [[ ! -f "$GPG_PASSPHRASE_FILE" ]]; then
   log "ERROR" "File passphrase GPG tidak ditemukan di: $GPG_PASSPHRASE_FILE"
-  log "ERROR" "Buat dengan: echo 'passphrase-anda' | sudo tee $GPG_PASSPHRASE_FILE"
+  log "ERROR" "Buat dengan: echo 'passphrase-anda' | sudo tee $GPG_PASSPHRASE_FILE atau set env var SINDAS_GPG_PASSPHRASE"
   exit 1
 fi
 

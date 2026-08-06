@@ -20,7 +20,7 @@ func backupScriptPath() string {
 	if p := os.Getenv("BACKUP_SCRIPT_PATH"); p != "" {
 		return p
 	}
-	return "/opt/sindas/scripts/backup_sindas.sh"
+	return "./scripts/backup/backup_sindas.sh"
 }
 
 // ─── TriggerBackup ────────────────────────────────────────────────────────────

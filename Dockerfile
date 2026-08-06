@@ -36,6 +36,10 @@ WORKDIR /app
 # Copy binary dari stage builder
 COPY --from=builder /app/server .
 
+# Copy scripts directory so that the backup script is available inside the container!
+COPY scripts ./scripts
+RUN chmod +x ./scripts/backup/backup_sindas.sh
+
 # Railway secara otomatis meng-inject PORT, default 8080
 ENV PORT=8080
 
