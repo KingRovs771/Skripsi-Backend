@@ -5,7 +5,11 @@ import (
 	"Skripsi-Backend/database"
 	"Skripsi-Backend/models"
 	"Skripsi-Backend/utils"
+	"encoding/csv"
+	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -248,5 +252,161 @@ func GetStudentHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"Data": results,
+	})
+}
+
+// ImportStudents menangani pengunggahan file CSV berisi data siswa baru oleh Guru BK
+func ImportStudents(c *gin.Context) {
+	claims, err := utils.ValidateJWT(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+		return
+	}
+
+	// 1. Dapatkan NPSN sekolah dari Guru BK yang login
+	var teacher struct {
+		NPSN string
+	}
+	if err := database.DB.Table("teachers").Where("n_ip = ?", claims.ID).Select("npsn").Scan(&teacher).Error; err != nil || teacher.NPSN == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data profil Guru BK"})
+		return
+	}
+
+	// 2. Dapatkan RoleUID untuk "Student"
+	var studentRole struct {
+		RoleUID string
+	}
+	if err := database.DB.Table("roles").Where("LOWER(role_name) = 'student'").Select("role_uid").Scan(&studentRole).Error; err != nil || studentRole.RoleUID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Role 'Student' tidak ditemukan di database"})
+		return
+	}
+
+	// 3. Ambil file dari multipart form
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File CSV wajib diunggah"})
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal membuka file"})
+		return
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Comma = ',' // standard CSV comma separator
+
+	// Baca header row
+	headers, err := reader.Read()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File CSV kosong atau tidak valid"})
+		return
+	}
+
+	// Buat map index header ke nama kolom agar fleksibel
+	headerMap := make(map[string]int)
+	for idx, h := range headers {
+		headerMap[strings.TrimSpace(strings.ToLower(h))] = idx
+	}
+
+	// Cek header wajib: nisn, nama_lengkap, email
+	requiredHeaders := []string{"nisn", "nama_lengkap", "email"}
+	for _, reqHeader := range requiredHeaders {
+		if _, ok := headerMap[reqHeader]; !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Kolom wajib '%s' tidak ditemukan di header CSV", reqHeader)})
+			return
+		}
+	}
+
+	var insertedCount int
+	var failedCount int
+	var errorLog []string
+
+	// Loop rows
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			failedCount++
+			errorLog = append(errorLog, fmt.Sprintf("Baris gagal dibaca: %v", err))
+			continue
+		}
+
+		// Helper untuk mengambil nilai kolom aman dari error index out of bounds
+		getVal := func(key string) string {
+			idx, ok := headerMap[key]
+			if !ok || idx >= len(record) {
+				return ""
+			}
+			return strings.TrimSpace(record[idx])
+		}
+
+		nisn := getVal("nisn")
+		namaLengkap := getVal("nama_lengkap")
+		noHp := getVal("no_hp")
+		alamat := getVal("alamat")
+		kelas := getVal("kelas")
+		email := getVal("email")
+		password := getVal("password")
+
+		if nisn == "" || namaLengkap == "" || email == "" {
+			failedCount++
+			errorLog = append(errorLog, fmt.Sprintf("NISN: '%s', Email: '%s' - Baris dilewati karena data wajib kosong", nisn, email))
+			continue
+		}
+
+		// Set default password jika kosong
+		if password == "" {
+			password = "Siswa123!"
+		}
+
+		// Cek duplikasi NISN
+		var countNisn int64
+		database.DB.Model(&models.Students{}).Where("nisn = ?", nisn).Count(&countNisn)
+		if countNisn > 0 {
+			failedCount++
+			errorLog = append(errorLog, fmt.Sprintf("NISN '%s' sudah terdaftar", nisn))
+			continue
+		}
+
+		// Cek duplikasi Email
+		var countEmail int64
+		database.DB.Model(&models.Students{}).Where("email = ?", email).Count(&countEmail)
+		if countEmail > 0 {
+			failedCount++
+			errorLog = append(errorLog, fmt.Sprintf("Email '%s' sudah terdaftar", email))
+			continue
+		}
+
+		// Buat model Students
+		newStudent := models.Students{
+			RoleUID:     studentRole.RoleUID,
+			NISN:        nisn,
+			NamaLengkap: namaLengkap,
+			NoHp:        noHp,
+			Alamat:      alamat,
+			Kelas:       kelas,
+			NPSN:        teacher.NPSN,
+			Email:       email,
+			Password:    password,
+		}
+
+		if _, err := newStudent.Save(); err != nil {
+			failedCount++
+			errorLog = append(errorLog, fmt.Sprintf("Gagal menyimpan siswa '%s': %v", namaLengkap, err))
+		} else {
+			insertedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Proses import selesai",
+		"inserted": insertedCount,
+		"failed":   failedCount,
+		"errors":   errorLog,
 	})
 }

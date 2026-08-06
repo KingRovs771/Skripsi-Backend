@@ -282,6 +282,7 @@ func main() {
 	GurubkHistoryRoutes.GET("", controllers.GetGurubkHistory)
 	GurubkHistoryRoutes.GET("/:nisn", controllers.GetGurubkHistoryDetail)
 	GurubkHistoryRoutes.PATCH("/review/:id", controllers.UpdateHistoryReview)
+	GurubkHistoryRoutes.POST("/import-students", controllers.ImportStudents)
 
 	// Dashboard Gurubk Routes
 	GurubkDashboardRoutes := router.Group("/api/gurubk/dashboard")
